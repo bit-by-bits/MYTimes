@@ -7,6 +7,8 @@ import SudokuGrid from "@/components/sudoku/sudoku-grid";
 import NumberPad from "@/components/sudoku/number-pad";
 import Controls from "@/components/sudoku/controls";
 import { cn } from "@/lib/utils";
+import Loading from "@/components/home/loading";
+import Error from "@/components/home/error";
 
 export interface Cell {
   value: number;
@@ -37,12 +39,7 @@ const Play = () => {
   });
 
   const renderDifficultyBadge = () => {
-    const difficultyColor =
-      difficulty === "Easy"
-        ? "bg-green-500"
-        : difficulty === "Medium"
-          ? "bg-yellow-500"
-          : "bg-red-500";
+    const difficultyColor = getDifficultyColor(difficulty);
     return (
       <span
         className={cn("px-3 py-1 text-white rounded-full", difficultyColor)}
@@ -52,15 +49,17 @@ const Play = () => {
     );
   };
 
+  const getDifficultyColor = (difficulty: string) => {
+    if (difficulty === "Easy") return "bg-green-500";
+    if (difficulty === "Medium") return "bg-yellow-500";
+    return "bg-red-500";
+  };
+
   const loadSudokuData = async () => {
     setLoading(true);
     try {
       const { grid, solution, difficulty } = await fetchSudokuPuzzle();
-      const gridWithProperties = grid.map((row: number[]) =>
-        row.map(initializeCell)
-      );
-
-      setSudokuGrid(gridWithProperties);
+      setSudokuGrid(grid.map((row: number[]) => row.map(initializeCell)));
       setSolutionGrid(solution);
       setDifficulty(difficulty);
     } catch {
@@ -72,11 +71,7 @@ const Play = () => {
 
   useEffect(() => {
     loadSudokuData();
-
-    const timer = setInterval(() => {
-      setTime(prev => prev + 1);
-    }, 1000);
-
+    const timer = setInterval(() => setTime(prev => prev + 1), 1000);
     return () => clearInterval(timer);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -118,14 +113,7 @@ const Play = () => {
 
   const handleHint = () => {
     if (hints > 0) {
-      const emptyCells: CellPosition[] = [];
-      sudokuGrid.forEach((row, rowIndex) => {
-        row.forEach((cell, colIndex) => {
-          if (cell.value === 0)
-            emptyCells.push({ row: rowIndex, col: colIndex });
-        });
-      });
-
+      const emptyCells: CellPosition[] = findEmptyCells();
       const randomCell =
         emptyCells[Math.floor(Math.random() * emptyCells.length)];
       updateCell(randomCell.row, randomCell.col, {
@@ -135,8 +123,18 @@ const Play = () => {
     }
   };
 
-  if (loading) return <Layout>Loading...</Layout>;
-  if (error) return <Layout>{error}</Layout>;
+  const findEmptyCells = () => {
+    const emptyCells: CellPosition[] = [];
+    sudokuGrid.forEach((row, rowIndex) => {
+      row.forEach((cell, colIndex) => {
+        if (cell.value === 0) emptyCells.push({ row: rowIndex, col: colIndex });
+      });
+    });
+    return emptyCells;
+  };
+
+  if (loading) return <Loading message="Please wait while sudoku loads..." />;
+  if (error) return <Error title="Error" message={error} />;
 
   return (
     <Layout>
@@ -171,7 +169,7 @@ const Play = () => {
       <SudokuGrid
         grid={sudokuGrid}
         selectedCell={selectedCell}
-        onCellClick={cell => setSelectedCell(cell)}
+        onCellClick={setSelectedCell}
       />
 
       <NumberPad

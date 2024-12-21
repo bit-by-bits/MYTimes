@@ -1,4 +1,4 @@
-import { get } from "@/lib/api";
+import { fetchRandomWord, fetchRelatedWord } from "@/services/words";
 
 export type Direction = "horizontal" | "vertical";
 
@@ -9,19 +9,11 @@ export interface Clue {
   col: number;
   direction: Direction;
   length: number;
+  meaning: string | null;
 }
 
-const fetchWords = async (query: string): Promise<string[]> => {
-  const response = await get<{ word: string; score: number }[]>(
-    "https://api.datamuse.com/words",
-    { ml: query, max: 10 }
-  );
-  return response.map(item => item.word);
-};
-
-const createEmptyGrid = (): string[][] => {
-  return Array.from({ length: 10 }, () => Array(10).fill("-"));
-};
+const createEmptyGrid = (size: number = 10): string[][] =>
+  Array.from({ length: size }, () => Array(size).fill("-"));
 
 const placeWordInGrid = (
   grid: string[][],
@@ -29,13 +21,11 @@ const placeWordInGrid = (
   row: number,
   col: number,
   direction: Direction
-) => {
+): void => {
   for (let i = 0; i < word.length; i++) {
-    if (direction === "horizontal") {
-      grid[row][col + i] = word[i];
-    } else {
-      grid[row + i][col] = word[i];
-    }
+    grid[row + (direction === "vertical" ? i : 0)][
+      col + (direction === "horizontal" ? i : 0)
+    ] = word[i];
   }
 };
 
@@ -46,42 +36,45 @@ const canPlaceWord = (
   col: number,
   direction: Direction
 ): boolean => {
-  if (direction === "horizontal") {
-    if (col + word.length > 10) return false;
-    for (let i = 0; i < word.length; i++) {
-      if (grid[row][col + i] !== "-" && grid[row][col + i] !== word[i])
-        return false;
-    }
-  } else {
-    if (row + word.length > 10) return false;
-    for (let i = 0; i < word.length; i++) {
-      if (grid[row + i][col] !== "-" && grid[row + i][col] !== word[i])
-        return false;
-    }
+  if (
+    (direction === "horizontal" && col + word.length > grid[0].length) ||
+    (direction === "vertical" && row + word.length > grid.length)
+  )
+    return false;
+
+  for (let i = 0; i < word.length; i++) {
+    if (
+      grid[row + (direction === "vertical" ? i : 0)][
+        col + (direction === "horizontal" ? i : 0)
+      ] !== "-" &&
+      grid[row + (direction === "vertical" ? i : 0)][
+        col + (direction === "horizontal" ? i : 0)
+      ] !== word[i]
+    )
+      return false;
   }
   return true;
 };
 
-const findRandomPositionForWord = (
+const findPosition = (
   grid: string[][],
-  word: string
-): {
-  row: number;
-  col: number;
-  direction: Direction;
-} | null => {
+  word: string,
+  overlap: boolean
+): { row: number; col: number; direction: Direction } | null => {
   const directions: Direction[] = ["horizontal", "vertical"];
+  const maxAttempts = overlap ? grid.length * grid[0].length : 50;
 
-  for (let attempt = 0; attempt < 100; attempt++) {
-    const direction = directions[Math.floor(Math.random() * 2)];
-    const row = Math.floor(Math.random() * 10);
-    const col = Math.floor(Math.random() * 10);
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const direction = directions[Math.floor(Math.random() * directions.length)];
+    const row = Math.floor(Math.random() * grid.length);
+    const col = Math.floor(Math.random() * grid[0].length);
 
-    if (canPlaceWord(grid, word, row, col, direction)) {
-      return { row, col, direction };
+    if (overlap ? grid[row][col] !== "-" : true) {
+      if (canPlaceWord(grid, word, row, col, direction)) {
+        return { row, col, direction };
+      }
     }
   }
-
   return null;
 };
 
@@ -89,30 +82,82 @@ export const generateCrosswordGrid = async (): Promise<{
   grid: string[][];
   clues: Clue[];
 }> => {
-  const grid = createEmptyGrid();
-  const clues: Clue[] = [];
-  const words = await fetchWords("example");
+  const maxOuterAttempts = 10;
+  const minWordCount = 10;
+  const maxWordCount = 20;
 
-  for (const word of words) {
-    const position = findRandomPositionForWord(grid, word);
-    if (position) {
-      placeWordInGrid(
-        grid,
-        word,
-        position.row,
-        position.col,
-        position.direction
-      );
+  for (let attempts = 0; attempts < maxOuterAttempts; attempts++) {
+    const grid = createEmptyGrid();
+    const clues: Clue[] = [];
+    const usedWords = new Set<string>();
+    let wordCount = 0;
+
+    try {
+      const currentWord = await fetchRandomWord();
+      const { relatedWords } = await fetchRelatedWord(currentWord);
+
+      if (!relatedWords || relatedWords.length === 0) continue;
+
+      const initialRelatedWord =
+        relatedWords[Math.floor(Math.random() * relatedWords.length)];
+
+      placeWordInGrid(grid, initialRelatedWord.word, 0, 0, "horizontal");
+
       clues.push({
-        index: clues.length + 1,
-        word,
-        row: position.row,
-        col: position.col,
-        direction: position.direction,
-        length: word.length
+        index: 1,
+        word: initialRelatedWord.word,
+        row: 0,
+        col: 0,
+        direction: "horizontal",
+        length: initialRelatedWord.word.length,
+        meaning: initialRelatedWord.meaning || null
       });
-    }
+
+      usedWords.add(initialRelatedWord.word);
+      wordCount++;
+
+      for (const relatedWord of relatedWords) {
+        if (usedWords.has(relatedWord.word)) continue;
+
+        const position =
+          findPosition(grid, relatedWord.word, true) ||
+          findPosition(grid, relatedWord.word, false);
+
+        if (position) {
+          placeWordInGrid(
+            grid,
+            relatedWord.word,
+            position.row,
+            position.col,
+            position.direction
+          );
+
+          clues.push({
+            index: clues.length + 1,
+            word: relatedWord.word,
+            row: position.row,
+            col: position.col,
+            direction: position.direction,
+            length: relatedWord.word.length,
+            meaning: relatedWord.meaning || null
+          });
+
+          usedWords.add(relatedWord.word);
+          wordCount++;
+
+          if (wordCount >= maxWordCount) break;
+        }
+      }
+
+      if (wordCount >= minWordCount) {
+        return { grid, clues };
+      }
+    } catch {}
+
+    console.warn(`Attempt ${attempts + 1} failed, retrying...`);
   }
 
-  return { grid, clues };
+  throw new Error(
+    "Failed to generate a crossword grid after maximum attempts."
+  );
 };

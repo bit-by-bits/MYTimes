@@ -6,6 +6,14 @@ import CrosswordGrid from "@/components/crossword/crossword-grid";
 import Controls from "@/components/crossword/controls";
 import CluesPanel from "@/components/crossword/clues-panel";
 import { Clue, generateCrosswordGrid } from "@/services/crossword";
+import Loading from "@/components/home/loading";
+import Error from "@/components/home/error";
+
+export interface Cell {
+  value: string;
+  color: string;
+  isBlack: boolean;
+}
 
 export interface CellPosition {
   row: number;
@@ -13,29 +21,50 @@ export interface CellPosition {
 }
 
 const Play = () => {
-  const [userGrid, setUserGrid] = useState<string[][]>([]);
-  const [solutionGrid, setSolutionGrid] = useState<string[][]>([]);
+  const [userGrid, setUserGrid] = useState<Cell[][]>([]);
+  const [solutionGrid, setSolutionGrid] = useState<Cell[][]>([]);
   const [clues, setClues] = useState<Clue[]>([]);
   const [selectedCell, setSelectedCell] = useState<CellPosition | null>(null);
+  const [selectedClue, setSelectedClue] = useState<Clue | null>(null);
+  const [selectedClueIndex, setSelectedClueIndex] = useState<number>(0);
   const [hints, setHints] = useState<number>(3);
   const [time, setTime] = useState<number>(0);
   const [moves, setMoves] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [highlightedCells, setHighlightedCells] = useState<CellPosition[]>([]);
+
+  const initializeGrid = (grid: string[][]) =>
+    grid.map(row =>
+      row.map(cell =>
+        cell === "-"
+          ? { value: "", color: "black", isBlack: true }
+          : { value: "", color: "white", isBlack: false }
+      )
+    );
+
+  const initializeSolution = (grid: string[][]) =>
+    grid.map(row =>
+      row.map(cell =>
+        cell === "-"
+          ? { value: "", color: "black", isBlack: true }
+          : { value: cell, color: "white", isBlack: false }
+      )
+    );
 
   const loadCrosswordData = async () => {
     setLoading(true);
+    setError(null);
+
     try {
       const { grid, clues } = await generateCrosswordGrid();
-      setUserGrid(grid.map(row => row.map(cell => (cell === "-" ? "-" : ""))));
-      setSolutionGrid(grid);
+      setUserGrid(initializeGrid(grid));
+      setSolutionGrid(initializeSolution(grid));
       setClues(clues);
       setHints(3);
       setMoves(0);
       setTime(0);
     } catch {
-      setError("Failed to load crossword data.");
+      setError("Failed to load crossword data. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -43,70 +72,68 @@ const Play = () => {
 
   useEffect(() => {
     loadCrosswordData();
-
     const timer = setInterval(() => setTime(prev => prev + 1), 1000);
     return () => clearInterval(timer);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (!selectedCell) {
-      setHighlightedCells([]);
+  const handleCellClick = (cellPosition: CellPosition) => {
+    setSelectedCell(cellPosition);
+
+    const relevantClues = clues.filter(
+      clue => clue.row === cellPosition.row && clue.col === cellPosition.col
+    );
+
+    if (relevantClues.length === 0) {
+      setSelectedClue(null);
+      setSelectedClueIndex(0);
       return;
     }
 
-    const associatedCells: CellPosition[] = [];
-    const clue = clues.find(
-      c =>
-        c.row === selectedCell.row &&
-        c.col === selectedCell.col &&
-        (c.direction === "horizontal" || c.direction === "vertical")
-    );
+    const isSameCell =
+      selectedCell?.row === cellPosition.row &&
+      selectedCell?.col === cellPosition.col;
+    const nextIndex = isSameCell
+      ? (selectedClueIndex + 1) % relevantClues.length
+      : 0;
 
-    if (clue) {
-      const { direction, row, col, length } = clue;
+    setSelectedClue(relevantClues[nextIndex]);
+    setSelectedClueIndex(nextIndex);
+  };
 
-      for (let i = 0; i < length; i++) {
-        associatedCells.push(
-          direction === "horizontal"
-            ? { row, col: col + i }
-            : { row: row + i, col }
-        );
-      }
-    }
-
-    setHighlightedCells(associatedCells);
-  }, [selectedCell, clues]);
-
-  const handleClueClick = (row: number, col: number) => {
-    setSelectedCell({ row, col });
+  const handleClueClick = (clue: Clue) => {
+    setSelectedCell({ row: clue.row, col: clue.col });
+    setSelectedClue(clue);
+    setSelectedClueIndex(0);
   };
 
   const handleHint = () => {
-    if (hints > 0) {
-      const newGrid = [...userGrid];
-      let hintUsed = false;
+    if (hints <= 0) return;
 
-      for (let row = 0; row < solutionGrid.length && !hintUsed; row++) {
-        for (let col = 0; col < solutionGrid[row].length; col++) {
-          if (solutionGrid[row][col] !== "-" && userGrid[row][col] === "") {
-            newGrid[row][col] = solutionGrid[row][col];
-            hintUsed = true;
-            break;
-          }
+    for (let row = 0; row < solutionGrid.length; row++) {
+      for (let col = 0; col < solutionGrid[row].length; col++) {
+        if (!solutionGrid[row][col].isBlack && !userGrid[row][col].value) {
+          const newGrid = [...userGrid];
+          newGrid[row][col] = {
+            ...newGrid[row][col],
+            value: solutionGrid[row][col].value
+          };
+          setUserGrid(newGrid);
+          setHints(hints - 1);
+          setMoves(moves + 1);
+          return;
         }
-      }
-
-      if (hintUsed) {
-        setUserGrid(newGrid);
-        setHints(prev => prev - 1);
-        setMoves(prev => prev + 1);
       }
     }
   };
 
   const handleSubmit = () => {
     const isCorrect = userGrid.every((row, rowIndex) =>
-      row.every((cell, colIndex) => cell === solutionGrid[rowIndex][colIndex])
+      row.every(
+        (cell, colIndex) =>
+          cell.value === solutionGrid[rowIndex][colIndex].value
+      )
     );
 
     alert(
@@ -114,8 +141,9 @@ const Play = () => {
     );
   };
 
-  if (loading) return <Layout>Loading...</Layout>;
-  if (error) return <Layout>{error}</Layout>;
+  if (loading)
+    return <Loading message="Please wait while crossword loads..." />;
+  if (error) return <Error title="Error" message={error} />;
 
   return (
     <Layout>
@@ -145,24 +173,18 @@ const Play = () => {
       <CrosswordGrid
         grid={userGrid}
         selectedCell={selectedCell}
-        onCellClick={cell => setSelectedCell(cell)}
+        selectedClue={selectedClue}
+        onCellClick={handleCellClick}
         clues={clues}
-        highlightedCells={highlightedCells}
-        isWordStart={(row, col, direction) =>
-          clues.find(
-            clue =>
-              clue.row === row &&
-              clue.col === col &&
-              clue.direction === direction
-          ) || null
-        }
         setGrid={newGrid => {
           setUserGrid(newGrid);
-          setMoves(prev => prev + 1);
+          setMoves(moves + 1);
         }}
       />
 
-      <CluesPanel clues={clues} onClueClick={handleClueClick} />
+      <CluesPanel clues={clues}
+      selectedClue={selectedClue}
+      onClueClick={handleClueClick} />
 
       <Controls
         hintsLeft={hints > 0}

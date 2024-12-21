@@ -1,23 +1,17 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Clue, Direction } from "@/services/crossword";
+import { Clue } from "@/services/crossword";
 import { Input } from "@/components/ui/input";
-import { CellPosition } from "@/app/crossword/play/page";
+import { Cell, CellPosition } from "@/app/crossword/play/page";
 
 interface CrosswordGridProps {
-  grid: string[][];
-  selectedCell: { row: number; col: number } | null;
-  onCellClick: (cell: { row: number; col: number }) => void;
+  grid: Cell[][];
+  selectedCell: CellPosition | null;
+  onCellClick: (cell: CellPosition) => void;
   clues: Clue[];
-  isWordStart: (
-    row: number,
-    col: number,
-    direction: Direction,
-    clues: Clue[]
-  ) => Clue | null;
-  highlightedCells: CellPosition[];
-  setGrid: (newGrid: string[][]) => void;
+  selectedClue: Clue | null; // Pass the selected clue directly
+  setGrid: (newGrid: Cell[][]) => void;
 }
 
 const CrosswordGrid = ({
@@ -25,8 +19,7 @@ const CrosswordGrid = ({
   selectedCell,
   onCellClick,
   clues,
-  isWordStart,
-  highlightedCells,
+  selectedClue,
   setGrid
 }: CrosswordGridProps) => {
   return (
@@ -35,72 +28,61 @@ const CrosswordGrid = ({
         row.map((cell, colIndex) => {
           const isSelected =
             selectedCell?.row === rowIndex && selectedCell?.col === colIndex;
-          const isBlackCell = cell === "-";
-          const isEmpty = cell === "";
-          const isHighlighted = highlightedCells.some(
-            highlighted =>
-              highlighted.row === rowIndex && highlighted.col === colIndex
-          );
-          const isStartOfWordHorizontal = isWordStart(
-            rowIndex,
-            colIndex,
-            "horizontal",
-            clues
-          );
-          const isStartOfWordVertical = isWordStart(
-            rowIndex,
-            colIndex,
-            "vertical",
-            clues
-          );
+
+          const isHighlighted =
+            selectedClue &&
+            ((selectedClue.direction === "horizontal" &&
+              selectedClue.row === rowIndex &&
+              selectedClue.col <= colIndex &&
+              colIndex < selectedClue.col + selectedClue.length) ||
+              (selectedClue.direction === "vertical" &&
+                selectedClue.col === colIndex &&
+                selectedClue.row <= rowIndex &&
+                rowIndex < selectedClue.row + selectedClue.length));
 
           return (
             <div
               key={`${rowIndex}-${colIndex}`}
               className={cn(
                 "w-16 h-16 flex items-center justify-center text-xl font-semibold border-2 border-black relative",
-                isSelected
-                  ? "bg-[#FA9B03] text-white"
-                  : isHighlighted
-                    ? "bg-gray-300"
-                    : "bg-white",
-                isBlackCell
+                cell.isBlack
                   ? "bg-black cursor-default"
-                  : isEmpty
-                    ? "cursor-pointer"
-                    : "bg-gray-300"
+                  : isSelected
+                    ? "bg-[#FA9B03] text-white"
+                    : isHighlighted
+                      ? "bg-yellow-200"
+                      : cell.value !== ""
+                        ? "bg-gray-200"
+                        : "bg-white"
               )}
               onClick={() =>
-                !isBlackCell &&
-                isEmpty &&
-                onCellClick({ row: rowIndex, col: colIndex })
+                !cell.isBlack && onCellClick({ row: rowIndex, col: colIndex })
               }
             >
-              {cell !== "-" && (
+              {!cell.isBlack && (
                 <Input
-                  value={cell}
+                  value={cell.value}
                   onChange={e => {
-                    onCellClick({ row: rowIndex, col: colIndex });
                     const newValue = e.target.value.slice(-1).toUpperCase();
                     if (/^[A-Z]$/.test(newValue)) {
-                      const newGrid = [...grid];
-                      newGrid[rowIndex][colIndex] = newValue;
+                      const newGrid = grid.map(r => r.map(c => ({ ...c })));
+                      newGrid[rowIndex][colIndex].value = newValue;
                       setGrid(newGrid);
                     }
                   }}
                   className="w-full h-full text-center text-2xl font-semibold bg-transparent rounded-none"
                 />
               )}
-              {(isStartOfWordHorizontal || isStartOfWordVertical) &&
-                !isBlackCell && (
-                  <span className="text-xs absolute top-0 left-0 mt-1 ml-1">
-                    {
-                      clues.find(
-                        clue => clue.row === rowIndex && clue.col === colIndex
-                      )?.index
-                    }
-                  </span>
-                )}
+              {!cell.isBlack && (
+                <span className="text-xs absolute top-0 left-0 mt-1 ml-1">
+                  {clues
+                    .filter(
+                      clue => clue.row === rowIndex && clue.col === colIndex
+                    )
+                    .map(clue => clue.index)
+                    .join(", ")}
+                </span>
+              )}
             </div>
           );
         })
