@@ -38,28 +38,33 @@ const Play = () => {
     prefilled: value !== 0
   });
 
-  const renderDifficultyBadge = () => {
-    const difficultyColor = getDifficultyColor(difficulty);
-    return (
-      <span
-        className={cn("px-3 py-1 text-white rounded-full", difficultyColor)}
-      >
-        {difficulty}
-      </span>
-    );
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case "Easy":
+        return "bg-green-500";
+      case "Medium":
+        return "bg-yellow-500";
+      default:
+        return "bg-red-500";
+    }
   };
 
-  const getDifficultyColor = (difficulty: string) => {
-    if (difficulty === "Easy") return "bg-green-500";
-    if (difficulty === "Medium") return "bg-yellow-500";
-    return "bg-red-500";
-  };
+  const renderDifficultyBadge = () => (
+    <span
+      className={cn(
+        "px-3 py-1 text-white rounded-full",
+        getDifficultyColor(difficulty)
+      )}
+    >
+      {difficulty}
+    </span>
+  );
 
   const loadSudokuData = async () => {
     setLoading(true);
     try {
       const { grid, solution, difficulty } = await fetchSudokuPuzzle();
-      setSudokuGrid(grid.map((row: number[]) => row.map(initializeCell)));
+      setSudokuGrid(grid.map(row => row.map(initializeCell)));
       setSolutionGrid(solution);
       setDifficulty(difficulty);
     } catch {
@@ -104,33 +109,31 @@ const Play = () => {
 
   const handleSubmit = () => {
     const currentGrid = sudokuGrid.map(row => row.map(cell => cell.value));
-    const result =
+    alert(
       JSON.stringify(currentGrid) === JSON.stringify(solutionGrid)
         ? "Congratulations! You solved the Sudoku."
-        : "Incorrect solution. Keep trying!";
-    alert(result);
+        : "Incorrect solution. Keep trying!"
+    );
   };
 
   const handleHint = () => {
     if (hints > 0) {
-      const emptyCells: CellPosition[] = findEmptyCells();
+      const emptyCells = sudokuGrid
+        .flatMap((row, rowIndex) =>
+          row.map((cell, colIndex) =>
+            cell.value === 0 ? { row: rowIndex, col: colIndex } : null
+          )
+        )
+        .filter(Boolean);
       const randomCell =
         emptyCells[Math.floor(Math.random() * emptyCells.length)];
-      updateCell(randomCell.row, randomCell.col, {
-        value: solutionGrid[randomCell.row][randomCell.col]
-      });
-      setHints(prev => prev - 1);
+      if (randomCell) {
+        updateCell(randomCell.row, randomCell.col, {
+          value: solutionGrid[randomCell.row][randomCell.col]
+        });
+        setHints(prev => prev - 1);
+      }
     }
-  };
-
-  const findEmptyCells = () => {
-    const emptyCells: CellPosition[] = [];
-    sudokuGrid.forEach((row, rowIndex) => {
-      row.forEach((cell, colIndex) => {
-        if (cell.value === 0) emptyCells.push({ row: rowIndex, col: colIndex });
-      });
-    });
-    return emptyCells;
   };
 
   if (loading) return <Loading message="Please wait while sudoku loads..." />;

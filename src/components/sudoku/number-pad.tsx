@@ -8,14 +8,14 @@ interface NumberPadProps {
 
 const NumberPad = ({ onNumberClick, onDelete }: NumberPadProps) => (
   <div className="flex gap-4 justify-center mb-6">
-    {Array.from({ length: 9 }, (_, i) => i + 1).map(num => (
+    {Array.from({ length: 9 }, (_, i) => (
       <Button
-        key={num}
+        key={i + 1}
         variant="outline"
-        onClick={() => onNumberClick(num)}
+        onClick={() => onNumberClick(i + 1)}
         className="w-12 h-12 text-xl font-semibold"
       >
-        {num}
+        {i + 1}
       </Button>
     ))}
     <Button

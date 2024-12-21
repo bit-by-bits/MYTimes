@@ -25,23 +25,20 @@ const Layout = ({ children }: LayoutProps) => {
   const { breadcrumbs } = useBreadcrumbs();
 
   const renderSidebarTriggerIcon = () => {
-    if (!breadcrumbs.length || breadcrumbs[0] === "home")
-      return <HomeIcon size={18} />;
-
+    const firstBreadcrumb = breadcrumbs[0]?.toLowerCase();
     const matchingNavItem = navData.topNav.find(
-      nav => nav.title.toLowerCase() === breadcrumbs[0].toLowerCase()
+      nav => nav.title.toLowerCase() === firstBreadcrumb
     );
 
-    if (!matchingNavItem || !matchingNavItem.icon)
-      return <HomeIcon size={18} />;
-
-    return (
+    return matchingNavItem?.icon ? (
       <Image
         src={matchingNavItem.icon}
         alt={matchingNavItem.title}
         width={18}
         height={18}
       />
+    ) : (
+      <HomeIcon size={18} />
     );
   };
 
@@ -49,21 +46,22 @@ const Layout = ({ children }: LayoutProps) => {
     <BreadcrumbList>
       {breadcrumbs.map((crumb, index) => {
         const route = Routes[crumb.toUpperCase() as keyof typeof Routes];
+        const isLast = index === breadcrumbs.length - 1;
 
         return (
           <div key={crumb} className="flex items-center gap-2">
             <BreadcrumbItem>
-              {index < breadcrumbs.length - 1 ? (
+              {isLast ? (
+                <BreadcrumbPage>{crumb}</BreadcrumbPage>
+              ) : (
                 <BreadcrumbLink
                   href={typeof route === "string" ? route : route.ROOT}
                 >
                   {crumb}
                 </BreadcrumbLink>
-              ) : (
-                <BreadcrumbPage>{crumb}</BreadcrumbPage>
               )}
             </BreadcrumbItem>
-            {index < breadcrumbs.length - 1 && <BreadcrumbSeparator />}
+            {!isLast && <BreadcrumbSeparator />}
           </div>
         );
       })}
@@ -78,11 +76,9 @@ const Layout = ({ children }: LayoutProps) => {
         bottomNav={navData.bottomNav}
       />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2">
-          <div className="flex items-center gap-2 px-4">
-            {renderSidebarTriggerIcon()}
-            <Breadcrumb>{renderBreadcrumbs()}</Breadcrumb>
-          </div>
+        <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+          {renderSidebarTriggerIcon()}
+          <Breadcrumb>{renderBreadcrumbs()}</Breadcrumb>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">{children}</div>
       </SidebarInset>

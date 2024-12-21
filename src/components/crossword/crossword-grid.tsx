@@ -10,7 +10,7 @@ interface CrosswordGridProps {
   selectedCell: CellPosition | null;
   onCellClick: (cell: CellPosition) => void;
   clues: Clue[];
-  selectedClue: Clue | null; // Pass the selected clue directly
+  selectedClue: Clue | null;
   setGrid: (newGrid: Cell[][]) => void;
 }
 
@@ -22,23 +22,49 @@ const CrosswordGrid = ({
   selectedClue,
   setGrid
 }: CrosswordGridProps) => {
+  const isSelectedCell = (rowIndex: number, colIndex: number) =>
+    selectedCell?.row === rowIndex && selectedCell?.col === colIndex;
+
+  const isHighlightedCell = (rowIndex: number, colIndex: number) => {
+    if (!selectedClue) return false;
+    const { direction, row, col, length } = selectedClue;
+    return direction === "horizontal"
+      ? row === rowIndex && col <= colIndex && colIndex < col + length
+      : direction === "vertical" &&
+          col === colIndex &&
+          row <= rowIndex &&
+          rowIndex < row + length;
+  };
+
+  const handleCellClick = (
+    rowIndex: number,
+    colIndex: number,
+    isBlack: boolean
+  ) => {
+    if (!isBlack) {
+      onCellClick({ row: rowIndex, col: colIndex });
+    }
+  };
+
+  const handleInputChange = (
+    rowIndex: number,
+    colIndex: number,
+    value: string
+  ) => {
+    const newValue = value.slice(-1).toUpperCase();
+    if (/^[A-Z]$/.test(newValue)) {
+      const newGrid = grid.map(r => r.map(c => ({ ...c })));
+      newGrid[rowIndex][colIndex].value = newValue;
+      setGrid(newGrid);
+    }
+  };
+
   return (
     <div className="grid grid-cols-10 max-w-4xl mx-auto mb-6 border-4 border-black">
       {grid.map((row, rowIndex) =>
         row.map((cell, colIndex) => {
-          const isSelected =
-            selectedCell?.row === rowIndex && selectedCell?.col === colIndex;
-
-          const isHighlighted =
-            selectedClue &&
-            ((selectedClue.direction === "horizontal" &&
-              selectedClue.row === rowIndex &&
-              selectedClue.col <= colIndex &&
-              colIndex < selectedClue.col + selectedClue.length) ||
-              (selectedClue.direction === "vertical" &&
-                selectedClue.col === colIndex &&
-                selectedClue.row <= rowIndex &&
-                rowIndex < selectedClue.row + selectedClue.length));
+          const isSelected = isSelectedCell(rowIndex, colIndex);
+          const isHighlighted = isHighlightedCell(rowIndex, colIndex);
 
           return (
             <div
@@ -50,26 +76,19 @@ const CrosswordGrid = ({
                   : isSelected
                     ? "bg-[#FA9B03] text-white"
                     : isHighlighted
-                      ? "bg-yellow-200"
+                      ? "bg-[#D6B235]"
                       : cell.value !== ""
                         ? "bg-gray-200"
                         : "bg-white"
               )}
-              onClick={() =>
-                !cell.isBlack && onCellClick({ row: rowIndex, col: colIndex })
-              }
+              onClick={() => handleCellClick(rowIndex, colIndex, cell.isBlack)}
             >
               {!cell.isBlack && (
                 <Input
                   value={cell.value}
-                  onChange={e => {
-                    const newValue = e.target.value.slice(-1).toUpperCase();
-                    if (/^[A-Z]$/.test(newValue)) {
-                      const newGrid = grid.map(r => r.map(c => ({ ...c })));
-                      newGrid[rowIndex][colIndex].value = newValue;
-                      setGrid(newGrid);
-                    }
-                  }}
+                  onChange={e =>
+                    handleInputChange(rowIndex, colIndex, e.target.value)
+                  }
                   className="w-full h-full text-center text-2xl font-semibold bg-transparent rounded-none"
                 />
               )}

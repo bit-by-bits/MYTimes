@@ -9,25 +9,30 @@ interface ControlsProps {
 
 const Controls = ({ hintsLeft, onHint, onReset, onSubmit }: ControlsProps) => {
   const buttonClass = "w-32 h-11 text-lg font-semibold";
+  const buttons = [
+    {
+      label: hintsLeft ? "Take Hint" : "No Hints",
+      onClick: onHint,
+      disabled: !hintsLeft,
+      variant: "outline" as const
+    },
+    { label: "Reset", onClick: onReset, variant: "outline" as const },
+    { label: "Submit", onClick: onSubmit, variant: "default" as const }
+  ];
 
   return (
     <div className="flex justify-between items-center mb-6">
-      <Button
-        onClick={onHint}
-        disabled={!hintsLeft}
-        variant="outline"
-        className={buttonClass}
-      >
-        {hintsLeft ? "Take Hint" : "No Hints"}
-      </Button>
-      <div className="flex space-x-4">
-        <Button onClick={onReset} variant="outline" className={buttonClass}>
-          Reset
+      {buttons.map(({ label, onClick, disabled, variant }, index) => (
+        <Button
+          key={index}
+          onClick={onClick}
+          disabled={disabled}
+          variant={variant}
+          className={buttonClass}
+        >
+          {label}
         </Button>
-        <Button onClick={onSubmit} className={buttonClass}>
-          Submit
-        </Button>
-      </div>
+      ))}
     </div>
   );
 };

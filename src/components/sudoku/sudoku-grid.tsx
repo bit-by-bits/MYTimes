@@ -7,35 +7,43 @@ interface SudokuGridProps {
   onCellClick: (cell: CellPosition) => void;
 }
 
-const SudokuGrid = ({ grid, selectedCell, onCellClick }: SudokuGridProps) => (
-  <div className="grid grid-cols-9 max-w-4xl mx-auto mb-6 border-4 border-black">
-    {grid.map((row, rowIndex) =>
-      row.map((cell, colIndex) => {
-        const isSelected =
-          selectedCell?.row === rowIndex && selectedCell?.col === colIndex;
+const SudokuGrid = ({ grid, selectedCell, onCellClick }: SudokuGridProps) => {
+  const isSelectedCell = (rowIndex: number, colIndex: number) =>
+    selectedCell?.row === rowIndex && selectedCell?.col === colIndex;
 
-        return (
-          <div
-            key={`${rowIndex}-${colIndex}`}
-            className={cn(
-              "w-16 h-16 flex items-center justify-center text-2xl font-semibold border border-black",
-              rowIndex % 3 === 0 && "border-t-4",
-              colIndex % 3 === 0 && "border-l-4",
-              rowIndex % 3 === 2 && "border-b-4",
-              colIndex % 3 === 2 && "border-r-4",
-              isSelected ? "bg-[#FA9B03] text-white" : cell.color,
-              !cell.prefilled && "cursor-pointer"
-            )}
-            onClick={() =>
-              !cell.prefilled && onCellClick({ row: rowIndex, col: colIndex })
-            }
-          >
-            {cell.value !== 0 ? cell.value : ""}
-          </div>
-        );
-      })
-    )}
-  </div>
-);
+  const isBorderCell = (rowIndex: number, colIndex: number) =>
+    rowIndex % 3 === 0 ||
+    colIndex % 3 === 0 ||
+    rowIndex % 3 === 2 ||
+    colIndex % 3 === 2;
+
+  return (
+    <div className="grid grid-cols-9 max-w-4xl mx-auto mb-6 border-4 border-black">
+      {grid.map((row, rowIndex) =>
+        row.map((cell, colIndex) => {
+          const isSelected = isSelectedCell(rowIndex, colIndex);
+          const isBorder = isBorderCell(rowIndex, colIndex);
+
+          return (
+            <div
+              key={`${rowIndex}-${colIndex}`}
+              className={cn(
+                "w-16 h-16 flex items-center justify-center text-2xl font-semibold border border-black",
+                isBorder && "border-4",
+                isSelected ? "bg-[#FA9B03] text-white" : cell.color,
+                !cell.prefilled && "cursor-pointer"
+              )}
+              onClick={() =>
+                !cell.prefilled && onCellClick({ row: rowIndex, col: colIndex })
+              }
+            >
+              {cell.value || ""}
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+};
 
 export default SudokuGrid;

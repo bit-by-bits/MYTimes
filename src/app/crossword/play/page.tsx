@@ -33,32 +33,22 @@ const Play = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const initializeGrid = (grid: string[][]) =>
+  const initializeGrid = (grid: string[][], isSolution: boolean) =>
     grid.map(row =>
-      row.map(cell =>
-        cell === "-"
-          ? { value: "", color: "black", isBlack: true }
-          : { value: "", color: "white", isBlack: false }
-      )
-    );
-
-  const initializeSolution = (grid: string[][]) =>
-    grid.map(row =>
-      row.map(cell =>
-        cell === "-"
-          ? { value: "", color: "black", isBlack: true }
-          : { value: cell, color: "white", isBlack: false }
-      )
+      row.map(cell => ({
+        value: isSolution && cell !== "-" ? cell : "",
+        color: cell === "-" ? "black" : "white",
+        isBlack: cell === "-"
+      }))
     );
 
   const loadCrosswordData = async () => {
     setLoading(true);
     setError(null);
-
     try {
       const { grid, clues } = await generateCrosswordGrid();
-      setUserGrid(initializeGrid(grid));
-      setSolutionGrid(initializeSolution(grid));
+      setUserGrid(initializeGrid(grid, false));
+      setSolutionGrid(initializeGrid(grid, true));
       setClues(clues);
       setHints(3);
       setMoves(0);
@@ -80,7 +70,6 @@ const Play = () => {
 
   const handleCellClick = (cellPosition: CellPosition) => {
     setSelectedCell(cellPosition);
-
     const relevantClues = clues.filter(
       clue => clue.row === cellPosition.row && clue.col === cellPosition.col
     );
@@ -94,16 +83,18 @@ const Play = () => {
     const isSameCell =
       selectedCell?.row === cellPosition.row &&
       selectedCell?.col === cellPosition.col;
-    const nextIndex = isSameCell
-      ? (selectedClueIndex + 1) % relevantClues.length
-      : 0;
-
-    setSelectedClue(relevantClues[nextIndex]);
-    setSelectedClueIndex(nextIndex);
+    setSelectedClue(
+      relevantClues[
+        isSameCell ? (selectedClueIndex + 1) % relevantClues.length : 0
+      ]
+    );
+    setSelectedClueIndex(
+      isSameCell ? (selectedClueIndex + 1) % relevantClues.length : 0
+    );
   };
 
-  const handleClueClick = (clue: Clue) => {
-    setSelectedCell({ row: clue.row, col: clue.col });
+  const handleClueClick = (clue: Clue | null) => {
+    setSelectedCell(clue ? { row: clue.row, col: clue.col } : null);
     setSelectedClue(clue);
     setSelectedClueIndex(0);
   };
@@ -135,7 +126,6 @@ const Play = () => {
           cell.value === solutionGrid[rowIndex][colIndex].value
       )
     );
-
     alert(
       isCorrect ? "Crossword solved correctly!" : "Some answers are incorrect."
     );
@@ -182,9 +172,11 @@ const Play = () => {
         }}
       />
 
-      <CluesPanel clues={clues}
-      selectedClue={selectedClue}
-      onClueClick={handleClueClick} />
+      <CluesPanel
+        clues={clues}
+        selectedClue={selectedClue}
+        onClueClick={handleClueClick}
+      />
 
       <Controls
         hintsLeft={hints > 0}
