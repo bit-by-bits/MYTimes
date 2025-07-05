@@ -1,0 +1,173 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ShadCN UI CSS Variables - Light Theme */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+
+    /* Typography and layout */
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    color-scheme: light;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+}
+
+/* Custom highlight classes for semantic tags */
+.highlight-definition {
+  @apply bg-blue-100 px-2 py-1 rounded-md border border-blue-200;
+  animation: highlight-fade-in 0.3s ease-in-out;
+}
+
+.highlight-example {
+  @apply bg-green-100 px-2 py-1 rounded-md border border-green-200;
+  animation: highlight-fade-in 0.3s ease-in-out;
+}
+
+.highlight-todo {
+  @apply bg-yellow-100 px-2 py-1 rounded-md border border-yellow-200;
+  animation: highlight-fade-in 0.3s ease-in-out;
+}
+
+.highlight-quote {
+  @apply bg-purple-100 px-2 py-1 rounded-md border border-purple-200;
+  animation: highlight-fade-in 0.3s ease-in-out;
+}
+
+/* Highlight fade-in animation */
+@keyframes highlight-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* TipTap Editor Styles */
+.prose-editor .ProseMirror {
+  outline: none;
+  border: none;
+  min-height: 150px;
+  padding: 16px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  color: hsl(var(--foreground));
+}
+
+.prose-editor .ProseMirror p {
+  margin: 0.5em 0;
+}
+
+.prose-editor .ProseMirror p:first-child {
+  margin-top: 0;
+}
+
+.prose-editor .ProseMirror p:last-child {
+  margin-bottom: 0;
+}
+
+.prose-editor .ProseMirror strong {
+  font-weight: 600;
+}
+
+.prose-editor .ProseMirror em {
+  font-style: italic;
+}
+
+.prose-editor .ProseMirror u {
+  text-decoration: underline;
+}
+
+.prose-editor .ProseMirror s {
+  text-decoration: line-through;
+}
+
+.prose-editor .ProseMirror h1 {
+  font-size: 1.5em;
+  font-weight: 600;
+  margin: 1em 0 0.5em;
+}
+
+.prose-editor .ProseMirror h2 {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin: 1em 0 0.5em;
+}
+
+.prose-editor .ProseMirror h3 {
+  font-size: 1.125em;
+  font-weight: 600;
+  margin: 1em 0 0.5em;
+}
+
+.prose-editor .ProseMirror:first-child h1,
+.prose-editor .ProseMirror:first-child h2,
+.prose-editor .ProseMirror:first-child h3 {
+  margin-top: 0;
+}
+
+.prose-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+  height: 0;
+}
+
+/* Formatting feedback animation */
+@keyframes format-feedback {
+  0% {
+    background-color: hsl(var(--primary) / 0.1);
+  }
+  50% {
+    background-color: hsl(var(--primary) / 0.2);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.format-feedback {
+  animation: format-feedback 0.3s ease-in-out;
+}
