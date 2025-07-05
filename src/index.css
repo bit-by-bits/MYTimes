@@ -52,19 +52,35 @@
 
 /* Custom highlight classes for semantic tags */
 .highlight-definition {
-  @apply bg-blue-100 px-1 py-0.5 rounded-sm;
+  @apply bg-blue-100 px-2 py-1 rounded-md border border-blue-200;
+  animation: highlight-fade-in 0.3s ease-in-out;
 }
 
 .highlight-example {
-  @apply bg-green-100 px-1 py-0.5 rounded-sm;
+  @apply bg-green-100 px-2 py-1 rounded-md border border-green-200;
+  animation: highlight-fade-in 0.3s ease-in-out;
 }
 
 .highlight-todo {
-  @apply bg-yellow-100 px-1 py-0.5 rounded-sm;
+  @apply bg-yellow-100 px-2 py-1 rounded-md border border-yellow-200;
+  animation: highlight-fade-in 0.3s ease-in-out;
 }
 
 .highlight-quote {
-  @apply bg-purple-100 px-1 py-0.5 rounded-sm;
+  @apply bg-purple-100 px-2 py-1 rounded-md border border-purple-200;
+  animation: highlight-fade-in 0.3s ease-in-out;
+}
+
+/* Highlight fade-in animation */
+@keyframes highlight-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* TipTap Editor Styles */
@@ -97,6 +113,10 @@
 
 .prose-editor .ProseMirror em {
   font-style: italic;
+}
+
+.prose-editor .ProseMirror u {
+  text-decoration: underline;
 }
 
 .prose-editor .ProseMirror s {
@@ -133,4 +153,21 @@
   color: hsl(var(--muted-foreground));
   pointer-events: none;
   height: 0;
+}
+
+/* Formatting feedback animation */
+@keyframes format-feedback {
+  0% {
+    background-color: hsl(var(--primary) / 0.1);
+  }
+  50% {
+    background-color: hsl(var(--primary) / 0.2);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.format-feedback {
+  animation: format-feedback 0.3s ease-in-out;
 }

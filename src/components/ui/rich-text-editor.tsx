@@ -1,8 +1,9 @@
 import React from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
 import { Button } from './button';
-import { Bold, Italic, Underline, Type } from 'lucide-react';
+import { Bold, Italic, Underline as UnderlineIcon, Type } from 'lucide-react';
 
 interface RichTextEditorProps {
   content: string;
@@ -24,6 +25,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           levels: [1, 2, 3],
         },
       }),
+      Underline,
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -41,8 +43,8 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   }
 
   return (
-    <div className={`border rounded-lg ${className}`}>
-      <div className="flex items-center space-x-2 p-2 bg-muted/50 rounded-t-lg border-b">
+    <div className={`border rounded-lg shadow-sm ${className}`}>
+      <div className="flex items-center space-x-2 p-3 bg-muted/30 rounded-t-lg border-b">
         <Type className="h-4 w-4 text-muted-foreground" />
         <div className="flex space-x-1">
           <Button
@@ -50,8 +52,8 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             variant={editor.isActive('bold') ? 'default' : 'ghost'}
             size="sm"
             onClick={() => editor.chain().focus().toggleBold().run()}
-            className="h-8 w-8 p-0"
-            title="Bold"
+            className="h-8 w-8 p-0 hover:bg-primary/10 transition-colors"
+            title="Bold (Ctrl+B)"
           >
             <Bold className="h-4 w-4" />
           </Button>
@@ -60,29 +62,29 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             variant={editor.isActive('italic') ? 'default' : 'ghost'}
             size="sm"
             onClick={() => editor.chain().focus().toggleItalic().run()}
-            className="h-8 w-8 p-0"
-            title="Italic"
+            className="h-8 w-8 p-0 hover:bg-primary/10 transition-colors"
+            title="Italic (Ctrl+I)"
           >
             <Italic className="h-4 w-4" />
           </Button>
           <Button
             type="button"
-            variant={editor.isActive('strike') ? 'default' : 'ghost'}
+            variant={editor.isActive('underline') ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => editor.chain().focus().toggleStrike().run()}
-            className="h-8 w-8 p-0"
-            title="Strikethrough"
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            className="h-8 w-8 p-0 hover:bg-primary/10 transition-colors"
+            title="Underline (Ctrl+U)"
           >
-            <Underline className="h-4 w-4" />
+            <UnderlineIcon className="h-4 w-4" />
           </Button>
         </div>
         <div className="text-xs text-muted-foreground ml-auto">
-          WYSIWYG Editor
+          Rich Text Editor
         </div>
       </div>
       <EditorContent 
         editor={editor} 
-        className="prose-editor"
+        className="prose-editor min-h-[150px]"
         placeholder={placeholder}
       />
     </div>

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { onAuthStateChanged, signOut, updateProfile } from 'firebase/auth';
 import { auth } from '../lib/firebase';
-import { signInWithGoogle, signUpWithGoogle, signInWithEmail, signUpWithEmail } from '../lib/auth';
+import { signInWithGoogle, signUpWithGoogle, signInWithGitHub, signUpWithGitHub, signInWithEmail, signUpWithEmail } from '../lib/auth';
 
 interface User {
   id: string;
@@ -16,6 +16,8 @@ interface AuthContextType {
   signup: (name: string, email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   signupWithGoogle: () => Promise<void>;
+  loginWithGitHub: () => Promise<void>;
+  signupWithGitHub: () => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
   isInitializing: boolean;
@@ -150,6 +152,52 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const loginWithGitHub = async () => {
+    setIsLoading(true);
+    try {
+      await signInWithGitHub();
+      // User state will be updated by onAuthStateChanged
+    } catch (error: any) {
+      console.error('GitHub login failed:', error);
+      let errorMessage = 'GitHub login failed. Please try again.';
+      
+      if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = 'Login cancelled.';
+      } else if (error.code === 'auth/popup-blocked') {
+        errorMessage = 'Popup blocked. Please allow popups and try again.';
+      } else if (error.code === 'auth/account-exists-with-different-credential') {
+        errorMessage = 'An account already exists with this email using a different sign-in method.';
+      }
+      
+      throw new Error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signupWithGitHub = async () => {
+    setIsLoading(true);
+    try {
+      await signUpWithGitHub();
+      // User state will be updated by onAuthStateChanged
+    } catch (error: any) {
+      console.error('GitHub signup failed:', error);
+      let errorMessage = 'GitHub signup failed. Please try again.';
+      
+      if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = 'Signup cancelled.';
+      } else if (error.code === 'auth/popup-blocked') {
+        errorMessage = 'Popup blocked. Please allow popups and try again.';
+      } else if (error.code === 'auth/account-exists-with-different-credential') {
+        errorMessage = 'An account already exists with this email using a different sign-in method.';
+      }
+      
+      throw new Error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = async () => {
     try {
       await signOut(auth);
@@ -165,6 +213,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signup,
     loginWithGoogle,
     signupWithGoogle,
+    loginWithGitHub,
+    signupWithGitHub,
     logout,
     isLoading,
     isInitializing,
