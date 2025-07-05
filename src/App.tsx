@@ -6,11 +6,7 @@ import { MainApp } from './components/main/MainApp';
 const AppContent: React.FC = () => {
   const { user } = useAuth();
 
-  return (
-    <div className="App">
-      {user ? <MainApp /> : <AuthPage />}
-    </div>
-  );
+  return <div className="App">{user ? <MainApp /> : <AuthPage />}</div>;
 };
 
 function App() {

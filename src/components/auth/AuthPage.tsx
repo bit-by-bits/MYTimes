@@ -10,13 +10,13 @@ export const AuthPage: React.FC = () => {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h2 className="text-3xl font-bold tracking-tight mb-2">
-            🖍️ Semantic Highlighter
+            Semantic Highlighter
           </h2>
           <p className="text-muted-foreground">
             Highlight specific semantic structures in your text
           </p>
         </div>
-        
+
         {isLogin ? (
           <LoginForm onSwitchToSignup={() => setIsLogin(false)} />
         ) : (
