@@ -66,3 +66,71 @@
 .highlight-quote {
   @apply bg-purple-100 px-1 py-0.5 rounded-sm;
 }
+
+/* TipTap Editor Styles */
+.prose-editor .ProseMirror {
+  outline: none;
+  border: none;
+  min-height: 150px;
+  padding: 16px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  color: hsl(var(--foreground));
+}
+
+.prose-editor .ProseMirror p {
+  margin: 0.5em 0;
+}
+
+.prose-editor .ProseMirror p:first-child {
+  margin-top: 0;
+}
+
+.prose-editor .ProseMirror p:last-child {
+  margin-bottom: 0;
+}
+
+.prose-editor .ProseMirror strong {
+  font-weight: 600;
+}
+
+.prose-editor .ProseMirror em {
+  font-style: italic;
+}
+
+.prose-editor .ProseMirror s {
+  text-decoration: line-through;
+}
+
+.prose-editor .ProseMirror h1 {
+  font-size: 1.5em;
+  font-weight: 600;
+  margin: 1em 0 0.5em;
+}
+
+.prose-editor .ProseMirror h2 {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin: 1em 0 0.5em;
+}
+
+.prose-editor .ProseMirror h3 {
+  font-size: 1.125em;
+  font-weight: 600;
+  margin: 1em 0 0.5em;
+}
+
+.prose-editor .ProseMirror:first-child h1,
+.prose-editor .ProseMirror:first-child h2,
+.prose-editor .ProseMirror:first-child h3 {
+  margin-top: 0;
+}
+
+.prose-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+  height: 0;
+}

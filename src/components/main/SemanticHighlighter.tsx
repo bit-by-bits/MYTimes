@@ -1,13 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Button } from '../ui/button';
-import { Textarea } from '../ui/textarea';
+import { RichTextEditor } from '../ui/rich-text-editor';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
+import { highlightAPI } from '../../lib/api';
 import {
-  Bold,
-  Italic,
-  Underline,
-  Type,
   BookOpen,
   Lightbulb,
   AlertCircle,
@@ -17,67 +14,43 @@ import {
 interface HighlightSpan {
   start: number;
   end: number;
-  tag: 'Definition' | 'Example' | 'TODO' | 'Quote';
+  text: string;
+  type: 'definition' | 'example' | 'todo' | 'quote';
 }
 
 interface TagToggle {
-  tag: 'Definition' | 'Example' | 'TODO' | 'Quote';
+  tag: 'definition' | 'example' | 'todo' | 'quote';
   enabled: boolean;
   color: string;
+  displayName: string;
 }
 
+// Utility function to strip HTML tags and get plain text
+const stripHtml = (html: string): string => {
+  const tmp = document.createElement('DIV');
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || '';
+};
+
 export const SemanticHighlighter: React.FC = () => {
-  const [inputText, setInputText] = useState('');
+  const [inputHtml, setInputHtml] = useState('');
   const [highlightedSpans, setHighlightedSpans] = useState<HighlightSpan[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [tagToggles, setTagToggles] = useState<TagToggle[]>([
-    { tag: 'Definition', enabled: true, color: 'bg-blue-100' },
-    { tag: 'Example', enabled: true, color: 'bg-green-100' },
-    { tag: 'TODO', enabled: true, color: 'bg-yellow-100' },
-    { tag: 'Quote', enabled: true, color: 'bg-purple-100' },
+    { tag: 'definition', enabled: true, color: 'bg-blue-100', displayName: 'Definition' },
+    { tag: 'example', enabled: true, color: 'bg-green-100', displayName: 'Example' },
+    { tag: 'todo', enabled: true, color: 'bg-yellow-100', displayName: 'TODO' },
+    { tag: 'quote', enabled: true, color: 'bg-purple-100', displayName: 'Quote' },
   ]);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const mockAnalyze = (text: string): HighlightSpan[] => {
-    const spans: HighlightSpan[] = [];
-
-    // Mock analysis - in real app, this would call the backend API
-    const patterns = [
-      { pattern: /is defined as/gi, tag: 'Definition' as const },
-      { pattern: /refers to/gi, tag: 'Definition' as const },
-      { pattern: /for example/gi, tag: 'Example' as const },
-      { pattern: /such as/gi, tag: 'Example' as const },
-      { pattern: /e\.g\./gi, tag: 'Example' as const },
-      { pattern: /TODO:/gi, tag: 'TODO' as const },
-      { pattern: /Fix:/gi, tag: 'TODO' as const },
-      { pattern: /according to/gi, tag: 'Quote' as const },
-      { pattern: /as stated by/gi, tag: 'Quote' as const },
-    ];
-
-    patterns.forEach(({ pattern, tag }) => {
-      let match;
-      while ((match = pattern.exec(text)) !== null) {
-        spans.push({
-          start: match.index,
-          end: match.index + match[0].length,
-          tag,
-        });
-      }
-    });
-
-    return spans.sort((a, b) => a.start - b.start);
-  };
 
   const handleAnalyze = async () => {
-    if (!inputText.trim()) return;
+    const plainText = stripHtml(inputHtml);
+    if (!plainText.trim()) return;
 
     setIsAnalyzing(true);
     try {
-      // Mock API call delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const spans = mockAnalyze(inputText);
-      setHighlightedSpans(spans);
+      const response = await highlightAPI.analyze(plainText);
+      setHighlightedSpans(response.highlights);
     } catch (error) {
       console.error('Analysis failed:', error);
     } finally {
@@ -85,7 +58,7 @@ export const SemanticHighlighter: React.FC = () => {
     }
   };
 
-  const toggleTag = (tagName: 'Definition' | 'Example' | 'TODO' | 'Quote') => {
+  const toggleTag = (tagName: 'definition' | 'example' | 'todo' | 'quote') => {
     setTagToggles(prev =>
       prev.map(toggle =>
         toggle.tag === tagName
@@ -95,46 +68,10 @@ export const SemanticHighlighter: React.FC = () => {
     );
   };
 
-  const applyFormatting = (format: 'bold' | 'italic' | 'underline') => {
-    if (!textareaRef.current) return;
-
-    const textarea = textareaRef.current;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-
-    if (start === end) return; // No text selected
-
-    const selectedText = inputText.slice(start, end);
-    let formattedText = '';
-
-    switch (format) {
-      case 'bold':
-        formattedText = `**${selectedText}**`;
-        break;
-      case 'italic':
-        formattedText = `*${selectedText}*`;
-        break;
-      case 'underline':
-        formattedText = `__${selectedText}__`;
-        break;
-    }
-
-    const newText =
-      inputText.slice(0, start) + formattedText + inputText.slice(end);
-    setInputText(newText);
-
-    // Reset selection after formatting
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(
-        start + formattedText.length,
-        start + formattedText.length
-      );
-    }, 0);
-  };
-
   const renderHighlightedText = () => {
-    if (!inputText || highlightedSpans.length === 0) {
+    const plainText = stripHtml(inputHtml);
+    
+    if (!plainText || highlightedSpans.length === 0) {
       return (
         <p className="text-muted-foreground italic">No text to highlight</p>
       );
@@ -145,11 +82,11 @@ export const SemanticHighlighter: React.FC = () => {
     );
 
     const validSpans = highlightedSpans.filter(span =>
-      enabledTags.has(span.tag)
+      enabledTags.has(span.type)
     );
 
     if (validSpans.length === 0) {
-      return <p className="text-foreground">{inputText}</p>;
+      return <p className="text-foreground">{plainText}</p>;
     }
 
     const parts = [];
@@ -158,20 +95,20 @@ export const SemanticHighlighter: React.FC = () => {
     validSpans.forEach(span => {
       // Add text before the span
       if (currentIndex < span.start) {
-        parts.push(inputText.slice(currentIndex, span.start));
+        parts.push(plainText.slice(currentIndex, span.start));
       }
 
       // Add the highlighted span
-      const spanText = inputText.slice(span.start, span.end);
+      const spanText = plainText.slice(span.start, span.end);
       const classMap = {
-        Definition: 'highlight-definition',
-        Example: 'highlight-example',
-        TODO: 'highlight-todo',
-        Quote: 'highlight-quote',
+        definition: 'highlight-definition',
+        example: 'highlight-example',
+        todo: 'highlight-todo',
+        quote: 'highlight-quote',
       };
 
       parts.push(
-        <span key={span.start} className={classMap[span.tag]}>
+        <span key={span.start} className={classMap[span.type]}>
           {spanText}
         </span>
       );
@@ -180,8 +117,8 @@ export const SemanticHighlighter: React.FC = () => {
     });
 
     // Add remaining text
-    if (currentIndex < inputText.length) {
-      parts.push(inputText.slice(currentIndex));
+    if (currentIndex < plainText.length) {
+      parts.push(plainText.slice(currentIndex));
     }
 
     return <div className="text-foreground">{parts}</div>;
@@ -194,7 +131,7 @@ export const SemanticHighlighter: React.FC = () => {
           Semantic Text Highlighter
         </h2>
         <p className="text-muted-foreground">
-          Paste your text below and we'll highlight semantic structures like
+          Use the rich text editor below to create formatted content, then we'll highlight semantic structures like
           definitions, examples, TODOs, and quotes.
         </p>
       </div>
@@ -202,60 +139,18 @@ export const SemanticHighlighter: React.FC = () => {
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="input-text">Input Text</Label>
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2 p-2 bg-muted/50 rounded-lg border">
-              <Type className="h-4 w-4 text-muted-foreground" />
-              <div className="flex space-x-1">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => applyFormatting('bold')}
-                  className="h-8 w-8 p-0"
-                  title="Bold"
-                >
-                  <Bold className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => applyFormatting('italic')}
-                  className="h-8 w-8 p-0"
-                  title="Italic"
-                >
-                  <Italic className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => applyFormatting('underline')}
-                  className="h-8 w-8 p-0"
-                  title="Underline"
-                >
-                  <Underline className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="text-xs text-muted-foreground ml-auto">
-                Select text to format
-              </div>
-            </div>
-            <Textarea
-              id="input-text"
-              ref={textareaRef}
-              placeholder="Paste your text here..."
-              value={inputText}
-              onChange={e => setInputText(e.target.value)}
-              className="min-h-[150px] resize-none"
-            />
-          </div>
+          <RichTextEditor
+            content={inputHtml}
+            onChange={setInputHtml}
+            placeholder="Start typing your text here..."
+            className="min-h-[200px]"
+          />
         </div>
 
         <div className="flex justify-center">
           <Button
             onClick={handleAnalyze}
-            disabled={isAnalyzing || !inputText.trim()}
+            disabled={isAnalyzing || !stripHtml(inputHtml).trim()}
             className="px-8"
           >
             {isAnalyzing ? 'Analyzing...' : 'Analyze'}
@@ -273,13 +168,13 @@ export const SemanticHighlighter: React.FC = () => {
               {tagToggles.map(toggle => {
                 const getIcon = (tag: string) => {
                   switch (tag) {
-                    case 'Definition':
+                    case 'definition':
                       return <BookOpen className="h-4 w-4" />;
-                    case 'Example':
+                    case 'example':
                       return <Lightbulb className="h-4 w-4" />;
-                    case 'TODO':
+                    case 'todo':
                       return <AlertCircle className="h-4 w-4" />;
-                    case 'Quote':
+                    case 'quote':
                       return <Quote className="h-4 w-4" />;
                     default:
                       return null;
@@ -293,7 +188,7 @@ export const SemanticHighlighter: React.FC = () => {
                       onCheckedChange={() => toggleTag(toggle.tag)}
                     />
                     {getIcon(toggle.tag)}
-                    <Label className="text-sm font-medium">{toggle.tag}</Label>
+                    <Label className="text-sm font-medium">{toggle.displayName}</Label>
                     <div className={`w-4 h-4 rounded-sm ${toggle.color}`} />
                   </div>
                 );

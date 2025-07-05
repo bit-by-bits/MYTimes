@@ -12,12 +12,20 @@ import {
   LogOut,
   User,
   Home,
-  BookOpen,
+  Info,
+  Github,
   Settings,
   Highlighter,
 } from 'lucide-react';
 
-export const Header: React.FC = () => {
+type CurrentPage = 'home' | 'about';
+
+interface HeaderProps {
+  onNavigate: (page: CurrentPage) => void;
+  currentPage: CurrentPage;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
   const { user, logout } = useAuth();
 
   return (
@@ -33,13 +41,29 @@ export const Header: React.FC = () => {
 
           <div className="flex items-center space-x-4">
             <nav className="hidden md:flex items-center space-x-4">
-              <Button variant="ghost" size="sm">
+              <Button 
+                variant={currentPage === 'home' ? 'default' : 'ghost'} 
+                size="sm"
+                onClick={() => onNavigate('home')}
+              >
                 <Home className="h-4 w-4 mr-2" />
-                Dashboard
+                Home
               </Button>
-              <Button variant="ghost" size="sm">
-                <BookOpen className="h-4 w-4 mr-2" />
-                My Highlights
+              <Button 
+                variant={currentPage === 'about' ? 'default' : 'ghost'} 
+                size="sm"
+                onClick={() => onNavigate('about')}
+              >
+                <Info className="h-4 w-4 mr-2" />
+                About
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => window.open('https://github.com/your-username/semantic-highlighter', '_blank')}
+              >
+                <Github className="h-4 w-4 mr-2" />
+                GitHub
               </Button>
             </nav>
             <DropdownMenu>
