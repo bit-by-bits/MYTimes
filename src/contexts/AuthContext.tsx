@@ -1,7 +1,20 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react';
 import { onAuthStateChanged, signOut, updateProfile } from 'firebase/auth';
 import { auth } from '../lib/firebase';
-import { signInWithGoogle, signUpWithGoogle, signInWithGitHub, signUpWithGitHub, signInWithEmail, signUpWithEmail } from '../lib/auth';
+import {
+  signInWithGoogle,
+  signUpWithGoogle,
+  signInWithGitHub,
+  signUpWithGitHub,
+  signInWithEmail,
+  signUpWithEmail,
+} from '../lib/auth';
 
 interface User {
   id: string;
@@ -43,12 +56,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, firebaseUser => {
       if (firebaseUser) {
         setUser({
           id: firebaseUser.uid,
           email: firebaseUser.email || '',
-          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || '',
+          name:
+            firebaseUser.displayName || firebaseUser.email?.split('@')[0] || '',
           picture: firebaseUser.photoURL || undefined,
         });
       } else {
@@ -68,7 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error: any) {
       console.error('Login failed:', error);
       let errorMessage = 'Login failed. Please try again.';
-      
+
       if (error.code === 'auth/user-not-found') {
         errorMessage = 'No account found with this email address.';
       } else if (error.code === 'auth/wrong-password') {
@@ -76,7 +90,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else if (error.code === 'auth/too-many-requests') {
         errorMessage = 'Too many failed attempts. Please try again later.';
       }
-      
+
       throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -95,7 +109,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error: any) {
       console.error('Signup failed:', error);
       let errorMessage = 'Signup failed. Please try again.';
-      
+
       if (error.code === 'auth/email-already-in-use') {
         errorMessage = 'An account with this email already exists.';
       } else if (error.code === 'auth/weak-password') {
@@ -103,7 +117,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else if (error.code === 'auth/invalid-email') {
         errorMessage = 'Please enter a valid email address.';
       }
-      
+
       throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -118,13 +132,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error: any) {
       console.error('Google login failed:', error);
       let errorMessage = 'Google login failed. Please try again.';
-      
+
       if (error.code === 'auth/popup-closed-by-user') {
         errorMessage = 'Login cancelled.';
       } else if (error.code === 'auth/popup-blocked') {
         errorMessage = 'Popup blocked. Please allow popups and try again.';
       }
-      
+
       throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -139,13 +153,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error: any) {
       console.error('Google signup failed:', error);
       let errorMessage = 'Google signup failed. Please try again.';
-      
+
       if (error.code === 'auth/popup-closed-by-user') {
         errorMessage = 'Signup cancelled.';
       } else if (error.code === 'auth/popup-blocked') {
         errorMessage = 'Popup blocked. Please allow popups and try again.';
       }
-      
+
       throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -160,15 +174,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error: any) {
       console.error('GitHub login failed:', error);
       let errorMessage = 'GitHub login failed. Please try again.';
-      
+
       if (error.code === 'auth/popup-closed-by-user') {
         errorMessage = 'Login cancelled.';
       } else if (error.code === 'auth/popup-blocked') {
         errorMessage = 'Popup blocked. Please allow popups and try again.';
-      } else if (error.code === 'auth/account-exists-with-different-credential') {
-        errorMessage = 'An account already exists with this email using a different sign-in method.';
+      } else if (
+        error.code === 'auth/account-exists-with-different-credential'
+      ) {
+        errorMessage =
+          'An account already exists with this email using a different sign-in method.';
       }
-      
+
       throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -183,15 +200,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error: any) {
       console.error('GitHub signup failed:', error);
       let errorMessage = 'GitHub signup failed. Please try again.';
-      
+
       if (error.code === 'auth/popup-closed-by-user') {
         errorMessage = 'Signup cancelled.';
       } else if (error.code === 'auth/popup-blocked') {
         errorMessage = 'Popup blocked. Please allow popups and try again.';
-      } else if (error.code === 'auth/account-exists-with-different-credential') {
-        errorMessage = 'An account already exists with this email using a different sign-in method.';
+      } else if (
+        error.code === 'auth/account-exists-with-different-credential'
+      ) {
+        errorMessage =
+          'An account already exists with this email using a different sign-in method.';
       }
-      
+
       throw new Error(errorMessage);
     } finally {
       setIsLoading(false);

@@ -53,33 +53,33 @@ export const SemanticHighlighter: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [copyMessage, setCopyMessage] = useState('');
   const [tagToggles, setTagToggles] = useState<TagToggle[]>([
-    { 
-      tag: 'definition', 
-      enabled: true, 
-      color: 'bg-blue-200', 
+    {
+      tag: 'definition',
+      enabled: true,
+      color: 'bg-blue-200',
       displayName: 'Definition',
-      tooltip: 'Highlights definitions and explanations in your text'
+      tooltip: 'Highlights definitions and explanations in your text',
     },
-    { 
-      tag: 'example', 
-      enabled: true, 
-      color: 'bg-green-200', 
+    {
+      tag: 'example',
+      enabled: true,
+      color: 'bg-green-200',
       displayName: 'Example',
-      tooltip: 'Identifies examples and illustrations that support concepts'
+      tooltip: 'Identifies examples and illustrations that support concepts',
     },
-    { 
-      tag: 'todo', 
-      enabled: true, 
-      color: 'bg-yellow-200', 
+    {
+      tag: 'todo',
+      enabled: true,
+      color: 'bg-yellow-200',
       displayName: 'TODO',
-      tooltip: 'Finds action items, TODOs, and tasks in your text'
+      tooltip: 'Finds action items, TODOs, and tasks in your text',
     },
-    { 
-      tag: 'quote', 
-      enabled: true, 
-      color: 'bg-purple-200', 
+    {
+      tag: 'quote',
+      enabled: true,
+      color: 'bg-purple-200',
       displayName: 'Quote',
-      tooltip: 'Highlights quotes, references, and citations'
+      tooltip: 'Highlights quotes, references, and citations',
     },
   ]);
 
@@ -92,7 +92,7 @@ export const SemanticHighlighter: React.FC = () => {
       const enabledTags = tagToggles
         .filter(toggle => toggle.enabled)
         .map(toggle => toggle.tag);
-      
+
       const response = await highlightAPI.analyze(plainText, 'en', enabledTags);
       setHighlightedSpans(response.highlights);
     } catch (error) {
@@ -131,12 +131,14 @@ export const SemanticHighlighter: React.FC = () => {
 
   const renderHighlightedText = () => {
     const plainText = stripHtml(inputHtml);
-    
+
     if (!plainText || highlightedSpans.length === 0) {
       return (
         <div className="text-center py-8">
           <div className="text-muted-foreground italic mb-4">
-            {!plainText ? 'Enter some text above to see highlights' : 'No highlights found in your text'}
+            {!plainText
+              ? 'Enter some text above to see highlights'
+              : 'No highlights found in your text'}
           </div>
           {!plainText && (
             <Button onClick={handleLoadSample} variant="outline" size="sm">
@@ -186,8 +188,8 @@ export const SemanticHighlighter: React.FC = () => {
       };
 
       parts.push(
-        <span 
-          key={`${span.start}-${index}`} 
+        <span
+          key={`${span.start}-${index}`}
           className={`${classMap[span.type]} relative group inline-block`}
           title={`${typeLabels[span.type]}: ${spanText.slice(0, 100)}${spanText.length > 100 ? '...' : ''}`}
         >
@@ -216,18 +218,21 @@ export const SemanticHighlighter: React.FC = () => {
           Semantic Text Highlighter
         </h2>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          Use our AI-powered editor to create formatted content, then we'll intelligently highlight 
-          semantic structures like definitions, examples, action items, and quotes.
+          Use our AI-powered editor to create formatted content, then we'll
+          intelligently highlight semantic structures like definitions,
+          examples, action items, and quotes.
         </p>
       </div>
 
       <div className="space-y-6">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Label htmlFor="input-text" className="text-base font-semibold">Input Text</Label>
-            <Button 
-              onClick={handleLoadSample} 
-              variant="outline" 
+            <Label htmlFor="input-text" className="text-base font-semibold">
+              Input Text
+            </Label>
+            <Button
+              onClick={handleLoadSample}
+              variant="outline"
               size="sm"
               className="text-sm"
             >

@@ -59,7 +59,9 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
     <div className="w-full max-w-md mx-auto space-y-6">
       <div className="text-center">
         <h1 className="text-2xl font-bold tracking-tight">Create an account</h1>
-        <p className="text-muted-foreground mt-2">Enter your information to get started</p>
+        <p className="text-muted-foreground mt-2">
+          Enter your information to get started
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">

@@ -15,8 +15,8 @@ interface RichTextEditorProps {
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   content,
   onChange,
-  placeholder = "Start typing...",
-  className = "",
+  placeholder = 'Start typing...',
+  className = '',
 }) => {
   const editor = useEditor({
     extensions: [
@@ -33,7 +33,8 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[150px] p-4',
+        class:
+          'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[150px] p-4',
       },
     },
   });
@@ -82,8 +83,8 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           Rich Text Editor
         </div>
       </div>
-      <EditorContent 
-        editor={editor} 
+      <EditorContent
+        editor={editor}
         className="prose-editor min-h-[150px]"
         placeholder={placeholder}
       />

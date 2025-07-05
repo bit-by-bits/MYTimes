@@ -19,7 +19,11 @@ interface HighlightAPIRequest {
 const API_BASE_URL = '/api';
 
 export const highlightAPI = {
-  async analyze(text: string, language: string = 'en', enabledTags: string[] = ['definition', 'example', 'todo', 'quote']): Promise<HighlightAPIResponse> {
+  async analyze(
+    text: string,
+    language: string = 'en',
+    enabledTags: string[] = ['definition', 'example', 'todo', 'quote']
+  ): Promise<HighlightAPIResponse> {
     try {
       // Simulate API call with proper structure
       const response = await fetch(`${API_BASE_URL}/highlight`, {
@@ -27,10 +31,10 @@ export const highlightAPI = {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          text, 
-          language, 
-          enabledTags 
+        body: JSON.stringify({
+          text,
+          language,
+          enabledTags,
         } as HighlightAPIRequest),
       });
 
@@ -38,7 +42,7 @@ export const highlightAPI = {
         throw new Error(`API request failed: ${response.status}`);
       }
 
-      return await response.json() as HighlightAPIResponse;
+      return (await response.json()) as HighlightAPIResponse;
     } catch (error) {
       // Fallback to dummy implementation when API is not available
       console.warn('API not available, using dummy implementation:', error);
@@ -46,27 +50,37 @@ export const highlightAPI = {
     }
   },
 
-  async dummyAnalyze(text: string, language: string = 'en', enabledTags: string[] = ['definition', 'example', 'todo', 'quote']): Promise<HighlightAPIResponse> {
+  async dummyAnalyze(
+    text: string,
+    language: string = 'en',
+    enabledTags: string[] = ['definition', 'example', 'todo', 'quote']
+  ): Promise<HighlightAPIResponse> {
     // Simulate API latency
-    await new Promise(resolve => setTimeout(resolve, 1200 + Math.random() * 800));
-    
+    await new Promise(resolve =>
+      setTimeout(resolve, 1200 + Math.random() * 800)
+    );
+
     // Enhanced pattern matching based on enabled tags
     const patterns = [
-      { 
-        pattern: /is defined as|refers to|means that|is a|are a|can be described as|is characterized by/gi, 
-        type: 'definition' as const 
+      {
+        pattern:
+          /is defined as|refers to|means that|is a|are a|can be described as|is characterized by/gi,
+        type: 'definition' as const,
       },
-      { 
-        pattern: /for example|such as|e\.g\.|for instance|like|including|namely|specifically|consider|take|imagine/gi, 
-        type: 'example' as const 
+      {
+        pattern:
+          /for example|such as|e\.g\.|for instance|like|including|namely|specifically|consider|take|imagine/gi,
+        type: 'example' as const,
       },
-      { 
-        pattern: /TODO:|FIXME:|NOTE:|Fix:|HACK:|BUG:|REVIEW:|OPTIMIZE:|REFACTOR:/gi, 
-        type: 'todo' as const 
+      {
+        pattern:
+          /TODO:|FIXME:|NOTE:|Fix:|HACK:|BUG:|REVIEW:|OPTIMIZE:|REFACTOR:/gi,
+        type: 'todo' as const,
       },
-      { 
-        pattern: /"[^"]*"|'[^']*'|according to|as stated|mentioned|quoted|cited|referenced/gi, 
-        type: 'quote' as const 
+      {
+        pattern:
+          /"[^"]*"|'[^']*'|according to|as stated|mentioned|quoted|cited|referenced/gi,
+        type: 'quote' as const,
       },
     ];
 
@@ -74,14 +88,14 @@ export const highlightAPI = {
     const enabledPatterns = patterns.filter(p => enabledTags.includes(p.type));
 
     const foundHighlights: HighlightSpan[] = [];
-    
+
     enabledPatterns.forEach(({ pattern, type }) => {
       let match;
       while ((match = pattern.exec(text)) !== null) {
         // Extend the match to include surrounding context for better highlighting
         let start = match.index;
         let end = match.index + match[0].length;
-        
+
         // For definitions, try to capture the full definition
         if (type === 'definition') {
           const afterMatch = text.slice(end, end + 100);
@@ -90,7 +104,7 @@ export const highlightAPI = {
             end = Math.min(end + definitionEnd, text.length);
           }
         }
-        
+
         // For examples, try to capture the full example
         if (type === 'example') {
           const beforeMatch = text.slice(Math.max(0, start - 50), start);
@@ -98,14 +112,14 @@ export const highlightAPI = {
           if (exampleStart > 0) {
             start = Math.max(0, start - 50 + exampleStart);
           }
-          
+
           const afterMatch = text.slice(end, end + 100);
           const exampleEnd = afterMatch.search(/[.!?]/);
           if (exampleEnd !== -1) {
             end = Math.min(end + exampleEnd + 1, text.length);
           }
         }
-        
+
         foundHighlights.push({
           start,
           end,
@@ -125,11 +139,11 @@ export const highlightAPI = {
           text: text.slice(0, Math.min(50, text.length)),
         },
       ].filter(h => enabledTags.includes(h.type));
-      
+
       foundHighlights.push(...dummyHighlights);
     }
 
-    return { 
+    return {
       highlights: foundHighlights
         .sort((a, b) => a.start - b.start)
         .filter((highlight, index, array) => {
@@ -138,7 +152,7 @@ export const highlightAPI = {
           const prev = array[index - 1];
           return highlight.start >= prev.end;
         })
-        .slice(0, 20) // Limit to 20 highlights for performance
+        .slice(0, 20), // Limit to 20 highlights for performance
     };
-  }
+  },
 };

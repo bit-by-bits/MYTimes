@@ -41,8 +41,8 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
               </h1>
             </div>
             <div className="hidden md:flex items-center space-x-1">
-              <Button 
-                variant={currentPage === 'home' ? 'default' : 'ghost'} 
+              <Button
+                variant={currentPage === 'home' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => onNavigate('home')}
                 className="px-3"
@@ -50,8 +50,8 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
                 <Home className="h-4 w-4 mr-2" />
                 Home
               </Button>
-              <Button 
-                variant={currentPage === 'about' ? 'default' : 'ghost'} 
+              <Button
+                variant={currentPage === 'about' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => onNavigate('about')}
                 className="px-3"
@@ -59,19 +59,26 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
                 <Info className="h-4 w-4 mr-2" />
                 About
               </Button>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
-                onClick={() => window.open('https://github.com/your-username/semantic-highlighter', '_blank')}
+                onClick={() =>
+                  window.open(
+                    'https://github.com/your-username/semantic-highlighter',
+                    '_blank'
+                  )
+                }
                 className="px-3"
               >
                 <Github className="h-4 w-4 mr-2" />
                 GitHub
               </Button>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
-                onClick={() => window.open('mailto:feedback@buildscraps.com', '_blank')}
+                onClick={() =>
+                  window.open('mailto:feedback@buildscraps.com', '_blank')
+                }
                 className="px-3"
               >
                 <MessageCircle className="h-4 w-4 mr-2" />
@@ -88,8 +95,8 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
                   className="relative h-9 w-9 rounded-full"
                 >
                   {user?.picture ? (
-                    <img 
-                      src={user.picture} 
+                    <img
+                      src={user.picture}
                       alt={user.name}
                       className="h-8 w-8 rounded-full object-cover"
                     />
@@ -106,8 +113,8 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1 leading-none">
                     {user?.picture ? (
-                      <img 
-                        src={user.picture} 
+                      <img
+                        src={user.picture}
                         alt={user.name}
                         className="h-10 w-10 rounded-full object-cover"
                       />
@@ -120,14 +127,16 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
                     )}
                   </div>
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.name}</p>
+                    <p className="text-sm font-medium leading-none">
+                      {user?.name}
+                    </p>
                     <p className="text-xs leading-none text-muted-foreground">
                       {user?.email}
                     </p>
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                
+
                 {/* Mobile navigation items */}
                 <div className="md:hidden">
                   <DropdownMenuItem onClick={() => onNavigate('home')}>
@@ -138,23 +147,34 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
                     <Info className="mr-2 h-4 w-4" />
                     <span>About</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.open('https://github.com/your-username/semantic-highlighter', '_blank')}>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      window.open(
+                        'https://github.com/your-username/semantic-highlighter',
+                        '_blank'
+                      )
+                    }
+                  >
                     <Github className="mr-2 h-4 w-4" />
                     <span>GitHub</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.open('mailto:feedback@buildscraps.com', '_blank')}>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      window.open('mailto:feedback@buildscraps.com', '_blank')
+                    }
+                  >
                     <MessageCircle className="mr-2 h-4 w-4" />
                     <span>Feedback</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </div>
-                
+
                 <DropdownMenuItem>
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={logout}
                   className="text-red-600 focus:text-red-600 focus:bg-red-50"
                 >

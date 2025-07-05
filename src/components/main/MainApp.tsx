@@ -24,9 +24,7 @@ export const MainApp: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header onNavigate={handleNavigate} currentPage={currentPage} />
-      <main className="py-8">
-        {renderCurrentPage()}
-      </main>
+      <main className="py-8">{renderCurrentPage()}</main>
     </div>
   );
 };
