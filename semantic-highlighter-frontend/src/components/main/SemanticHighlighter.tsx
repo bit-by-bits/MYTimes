@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
 
 interface HighlightSpan {
   start: number;
@@ -85,7 +86,7 @@ export const SemanticHighlighter: React.FC = () => {
 
   const renderHighlightedText = () => {
     if (!inputText || highlightedSpans.length === 0) {
-      return <p className="text-gray-500 italic">No text to highlight</p>;
+      return <p className="text-muted-foreground italic">No text to highlight</p>;
     }
 
     const enabledTags = new Set(
@@ -95,7 +96,7 @@ export const SemanticHighlighter: React.FC = () => {
     const validSpans = highlightedSpans.filter(span => enabledTags.has(span.tag));
 
     if (validSpans.length === 0) {
-      return <p className="text-gray-900">{inputText}</p>;
+      return <p className="text-foreground">{inputText}</p>;
     }
 
     const parts = [];
@@ -130,25 +131,23 @@ export const SemanticHighlighter: React.FC = () => {
       parts.push(inputText.slice(currentIndex));
     }
 
-    return <div className="text-gray-900">{parts}</div>;
+    return <div className="text-foreground">{parts}</div>;
   };
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        <h2 className="text-2xl font-bold tracking-tight mb-2">
           Semantic Text Highlighter
         </h2>
-        <p className="text-gray-600">
+        <p className="text-muted-foreground">
           Paste your text below and we'll highlight semantic structures like definitions, examples, TODOs, and quotes.
         </p>
       </div>
 
       <div className="space-y-4">
-        <div>
-          <label htmlFor="input-text" className="block text-sm font-medium text-gray-700 mb-2">
-            Input Text
-          </label>
+        <div className="space-y-2">
+          <Label htmlFor="input-text">Input Text</Label>
           <Textarea
             id="input-text"
             placeholder="Paste your text here..."
@@ -172,7 +171,7 @@ export const SemanticHighlighter: React.FC = () => {
       {highlightedSpans.length > 0 && (
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-3">
+            <h3 className="text-lg font-medium tracking-tight mb-3">
               Tag Toggles
             </h3>
             <div className="grid grid-cols-2 gap-4">
@@ -182,9 +181,9 @@ export const SemanticHighlighter: React.FC = () => {
                     checked={toggle.enabled}
                     onCheckedChange={() => toggleTag(toggle.tag)}
                   />
-                  <span className="text-sm font-medium text-gray-700">
+                  <Label className="text-sm font-medium">
                     {toggle.tag}
-                  </span>
+                  </Label>
                   <div className={`w-4 h-4 rounded-sm ${toggle.color}`} />
                 </div>
               ))}
@@ -192,10 +191,10 @@ export const SemanticHighlighter: React.FC = () => {
           </div>
 
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-3">
+            <h3 className="text-lg font-medium tracking-tight mb-3">
               Highlighted Text
             </h3>
-            <div className="p-4 bg-gray-50 rounded-lg border">
+            <div className="p-4 bg-muted/50 rounded-lg border">
               {renderHighlightedText()}
             </div>
           </div>

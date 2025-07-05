@@ -14,11 +14,11 @@ export const Header: React.FC = () => {
   const { user, logout } = useAuth();
 
   return (
-    <header className="border-b bg-white">
+    <header className="border-b bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
-            <h1 className="text-xl font-bold text-gray-900">
+            <h1 className="text-xl font-bold tracking-tight">
               🖍️ Semantic Highlighter
             </h1>
           </div>
@@ -27,7 +27,7 @@ export const Header: React.FC = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <div className="flex items-center justify-center h-8 w-8 rounded-full bg-gray-100">
+                  <div className="flex items-center justify-center h-8 w-8 rounded-full bg-muted">
                     <User className="h-4 w-4" />
                   </div>
                 </Button>
@@ -35,7 +35,7 @@ export const Header: React.FC = () => {
               <DropdownMenuContent className="w-56" align="end">
                 <DropdownMenuItem className="flex-col items-start">
                   <div className="text-sm font-medium">{user?.name}</div>
-                  <div className="text-xs text-gray-500">{user?.email}</div>
+                  <div className="text-xs text-muted-foreground">{user?.email}</div>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout}>

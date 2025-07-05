@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
-import { Textarea } from '../ui/textarea';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface LoginFormProps {
@@ -32,43 +33,37 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
   return (
     <div className="w-full max-w-md mx-auto space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
-        <p className="text-gray-600 mt-2">Sign in to your account</p>
+        <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
+        <p className="text-muted-foreground mt-2">Sign in to your account</p>
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            Email
-          </label>
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
             id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Enter your email"
             disabled={isLoading}
           />
         </div>
         
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            Password
-          </label>
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
             id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Enter your password"
             disabled={isLoading}
           />
         </div>
         
         {error && (
-          <div className="text-red-600 text-sm">{error}</div>
+          <div className="text-destructive text-sm">{error}</div>
         )}
         
         <Button
@@ -81,12 +76,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
       </form>
       
       <div className="text-center">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           Don't have an account?{' '}
           <button
             type="button"
             onClick={onSwitchToSignup}
-            className="font-medium text-blue-600 hover:text-blue-500"
+            className="font-medium text-primary underline-offset-4 hover:underline"
           >
             Sign up
           </button>
