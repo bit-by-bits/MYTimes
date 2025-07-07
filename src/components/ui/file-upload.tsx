@@ -20,7 +20,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const handleFile = useCallback(
     async (file: File) => {
       if (!fileUtils.isFileSupported(file)) {
-        onError(`Unsupported file type: ${file.name}. Supported types: ${fileUtils.getSupportedFileTypes().join(', ')}`);
+        onError(
+          `Unsupported file type: ${file.name}. Supported types: ${fileUtils.getSupportedFileTypes().join(', ')}`
+        );
         return;
       }
 
@@ -29,7 +31,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         const result = await fileUtils.extractTextFromFile(file);
         onFileUpload(result);
       } catch (error) {
-        onError(error instanceof Error ? error.message : 'Failed to upload file');
+        onError(
+          error instanceof Error ? error.message : 'Failed to upload file'
+        );
       } finally {
         setIsUploading(false);
       }
@@ -94,13 +98,17 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           onChange={handleFileInput}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           disabled={disabled || isUploading}
+          aria-label="Upload file"
+          title="Upload file"
         />
-        
+
         <div className="space-y-2">
           <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
           <div>
             <p className="text-sm font-medium">
-              {isUploading ? 'Uploading...' : 'Drop file here or click to upload'}
+              {isUploading
+                ? 'Uploading...'
+                : 'Drop file here or click to upload'}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               Supports .txt, .pdf, .docx files
@@ -119,4 +127,4 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       </div>
     </div>
   );
-}; 
+};

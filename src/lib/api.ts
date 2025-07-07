@@ -14,12 +14,16 @@ interface HighlightAPIRequest {
 }
 
 // API endpoint
-const API_BASE_URL = '/api';
+const API_URL = import.meta.env.VITE_API_URL;
+
+if (!API_URL) {
+  throw new Error("VITE_API_URL is not defined");
+}
 
 export const highlightAPI = {
   async analyze(text: string): Promise<HighlightAPIResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/highlight`, {
+      const response = await fetch(`${API_URL}/highlight`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

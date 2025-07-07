@@ -148,18 +148,21 @@ export const SemanticHighlighter: React.FC = () => {
     setCopyMessage('');
   }, []);
 
-  const handleFileUpload = useCallback((result: FileUploadResult) => {
-    setInputText(result.text);
-    setUploadedFileName(result.fileName);
-    setHighlightedSpans([]);
-    setErrorMessage('');
-    // Auto-analyze after file upload
-    setTimeout(() => {
-      if (result.text.trim()) {
-        handleAnalyze();
-      }
-    }, 100);
-  }, [handleAnalyze]);
+  const handleFileUpload = useCallback(
+    (result: FileUploadResult) => {
+      setInputText(result.text);
+      setUploadedFileName(result.fileName);
+      setHighlightedSpans([]);
+      setErrorMessage('');
+      // Auto-analyze after file upload
+      setTimeout(() => {
+        if (result.text.trim()) {
+          handleAnalyze();
+        }
+      }, 100);
+    },
+    [handleAnalyze]
+  );
 
   const handleFileError = useCallback((message: string) => {
     setErrorMessage(message);
@@ -228,18 +231,26 @@ export const SemanticHighlighter: React.FC = () => {
         codeblock: 'Code',
       };
 
-      parts.push(
-        <span
-          key={`${span.start}-${index}`}
-          className={`${classMap[span.type]} relative group inline-block`}
-          title={`${typeLabels[span.type]}: ${spanText.slice(0, 100)}${spanText.length > 100 ? '...' : ''}`}
-        >
-          {spanText}
-          <span className="absolute -top-6 left-0 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-            {typeLabels[span.type]}
+      if (span.type === 'codeblock') {
+        parts.push(
+          <pre key={`codeblock-${span.start}-${index}`} className="highlight-codeblock font-mono bg-gray-100 rounded px-2 py-1 my-2 transition-colors duration-300 overflow-x-auto">
+            <code>{spanText}</code>
+          </pre>
+        );
+      } else {
+        parts.push(
+          <span
+            key={`${span.start}-${index}`}
+            className={`${classMap[span.type]} relative group inline-block transition-colors duration-300`}
+            title={`${typeLabels[span.type]}: ${spanText.slice(0, 100)}${spanText.length > 100 ? '...' : ''}`}
+          >
+            {spanText}
+            <span className="absolute -top-6 left-0 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+              {typeLabels[span.type]}
+            </span>
           </span>
-        </span>
-      );
+        );
+      }
 
       currentIndex = span.end;
     });
@@ -258,7 +269,7 @@ export const SemanticHighlighter: React.FC = () => {
       // In a real implementation, you would use html2pdf.js or similar
       const element = document.createElement('div');
       const highlightedContent = renderHighlightedText();
-      
+
       // Convert React elements to HTML string
       const tempDiv = document.createElement('div');
       if (Array.isArray(highlightedContent)) {
@@ -275,13 +286,13 @@ export const SemanticHighlighter: React.FC = () => {
       } else {
         tempDiv.innerHTML = highlightedContent as string;
       }
-      
+
       element.innerHTML = tempDiv.innerHTML;
       element.style.padding = '20px';
       element.style.fontFamily = 'monospace';
       element.style.fontSize = '12px';
       element.style.lineHeight = '1.6';
-      
+
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(`
@@ -316,7 +327,9 @@ export const SemanticHighlighter: React.FC = () => {
       {/* Header with theme toggle */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Semantic Highlighter</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Semantic Highlighter
+          </h1>
           <p className="text-muted-foreground">
             Upload text or paste content to analyze semantic structures
           </p>
@@ -327,7 +340,11 @@ export const SemanticHighlighter: React.FC = () => {
           onClick={toggleTheme}
           className="flex items-center space-x-2"
         >
-          {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          {theme === 'dark' ? (
+            <Sun className="h-4 w-4" />
+          ) : (
+            <Moon className="h-4 w-4" />
+          )}
           <span className="hidden sm:inline">
             {theme === 'dark' ? 'Light' : 'Dark'} Mode
           </span>
@@ -365,7 +382,7 @@ export const SemanticHighlighter: React.FC = () => {
       </div>
 
       {/* Two-column layout */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left pane - Input */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -376,6 +393,7 @@ export const SemanticHighlighter: React.FC = () => {
                 size="sm"
                 onClick={handleLoadSample}
                 disabled={isAnalyzing}
+                aria-label="Load Sample"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
                 Sample
@@ -385,18 +403,19 @@ export const SemanticHighlighter: React.FC = () => {
                 size="sm"
                 onClick={handleClear}
                 disabled={isAnalyzing}
+                aria-label="Clear"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Clear
               </Button>
             </div>
           </div>
-          
+
           <Textarea
             value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
+            onChange={e => setInputText(e.target.value)}
             placeholder="Paste your text here or upload a file..."
-            className="min-h-[400px] monospace-text resize-none"
+            className="max-h-[500px] overflow-auto p-4 monospace-text resize-none"
             disabled={isAnalyzing}
           />
         </div>
@@ -411,6 +430,7 @@ export const SemanticHighlighter: React.FC = () => {
                 size="sm"
                 onClick={copyHighlightedText}
                 disabled={!inputText.trim()}
+                aria-label="Copy"
               >
                 <Copy className="h-4 w-4 mr-2" />
                 Copy
@@ -420,6 +440,7 @@ export const SemanticHighlighter: React.FC = () => {
                 size="sm"
                 onClick={exportAsPDF}
                 disabled={!inputText.trim() || highlightedSpans.length === 0}
+                aria-label="Export PDF"
               >
                 <Download className="h-4 w-4 mr-2" />
                 Export PDF
@@ -427,7 +448,8 @@ export const SemanticHighlighter: React.FC = () => {
             </div>
           </div>
 
-          <div className="border rounded-lg p-4 min-h-[400px] bg-card">
+          <div className="border rounded-lg p-4 max-h-[500px] overflow-auto bg-card leading-relaxed relative">
+            {isAnalyzing && <div className="absolute inset-0 flex items-center justify-center bg-white/70 dark:bg-black/40 z-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}
             {!inputText ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Upload className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -444,6 +466,23 @@ export const SemanticHighlighter: React.FC = () => {
               </div>
             )}
           </div>
+
+          {errorMessage && (
+            <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center space-x-2">
+              <AlertCircle className="h-4 w-4 text-destructive" />
+              <span className="text-sm text-destructive">{errorMessage}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAnalyze}
+                disabled={!inputText.trim() || isAnalyzing}
+                aria-label="Try Again"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -454,12 +493,13 @@ export const SemanticHighlighter: React.FC = () => {
           onToggleType={toggleHighlightType}
           className="w-full sm:w-auto"
         />
-        
+
         <div className="flex items-center space-x-2">
           <Button
             onClick={handleAnalyze}
             disabled={!inputText.trim() || isAnalyzing}
             className="min-w-[120px]"
+            aria-label={isAnalyzing ? "Analyzing..." : "Highlight"}
           >
             {isAnalyzing ? (
               <>
