@@ -8,6 +8,7 @@ import {
 } from '../ui/dropdown-menu';
 import { Button } from '../ui/button';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import {
   LogOut,
   Home,
@@ -15,6 +16,8 @@ import {
   Github,
   Settings,
   MessageCircle,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 type CurrentPage = 'home' | 'about';
@@ -26,6 +29,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const navItems = [
     {
@@ -86,6 +90,19 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
           </div>
 
           <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleTheme}
+              className="hidden sm:flex"
+            >
+              {theme === 'dark' ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button>
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 {user?.picture ? (
@@ -141,6 +158,18 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
                   ))}
                   <DropdownMenuSeparator />
                 </div>
+
+                <DropdownMenuItem
+                  onClick={toggleTheme}
+                  className="cursor-pointer hover:bg-muted md:hidden"
+                >
+                  {theme === 'dark' ? (
+                    <Sun className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Moon className="mr-2 h-4 w-4" />
+                  )}
+                  {theme === 'dark' ? 'Light' : 'Dark'} Mode
+                </DropdownMenuItem>
 
                 <DropdownMenuItem
                   onClick={() => console.log('Settings')}

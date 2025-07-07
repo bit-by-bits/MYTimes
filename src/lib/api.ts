@@ -2,7 +2,7 @@ interface HighlightSpan {
   start: number;
   end: number;
   text: string;
-  type: 'definition' | 'example' | 'todo' | 'quote';
+  type: 'definition' | 'example' | 'todo' | 'bullet' | 'numbered' | 'codeblock';
 }
 
 interface HighlightAPIResponse {
@@ -11,21 +11,14 @@ interface HighlightAPIResponse {
 
 interface HighlightAPIRequest {
   text: string;
-  language: string;
-  enabledTags: string[];
 }
 
-// Simulate API endpoint
+// API endpoint
 const API_BASE_URL = '/api';
 
 export const highlightAPI = {
-  async analyze(
-    text: string,
-    language: string = 'en',
-    enabledTags: string[] = ['definition', 'example', 'todo', 'quote']
-  ): Promise<HighlightAPIResponse> {
+  async analyze(text: string): Promise<HighlightAPIResponse> {
     try {
-      // Simulate API call with proper structure
       const response = await fetch(`${API_BASE_URL}/highlight`, {
         method: 'POST',
         headers: {
@@ -33,8 +26,6 @@ export const highlightAPI = {
         },
         body: JSON.stringify({
           text,
-          language,
-          enabledTags,
         } as HighlightAPIRequest),
       });
 
@@ -46,21 +37,17 @@ export const highlightAPI = {
     } catch (error) {
       // Fallback to dummy implementation when API is not available
       console.warn('API not available, using dummy implementation:', error);
-      return await this.dummyAnalyze(text, language, enabledTags);
+      return await this.dummyAnalyze(text);
     }
   },
 
-  async dummyAnalyze(
-    text: string,
-    language: string = 'en',
-    enabledTags: string[] = ['definition', 'example', 'todo', 'quote']
-  ): Promise<HighlightAPIResponse> {
+  async dummyAnalyze(text: string): Promise<HighlightAPIResponse> {
     // Simulate API latency
     await new Promise(resolve =>
       setTimeout(resolve, 1200 + Math.random() * 800)
     );
 
-    // Enhanced pattern matching based on enabled tags
+    // Enhanced pattern matching for all types
     const patterns = [
       {
         pattern:
@@ -78,18 +65,22 @@ export const highlightAPI = {
         type: 'todo' as const,
       },
       {
-        pattern:
-          /"[^"]*"|'[^']*'|according to|as stated|mentioned|quoted|cited|referenced/gi,
-        type: 'quote' as const,
+        pattern: /^[\s]*[-•*]\s+/gm,
+        type: 'bullet' as const,
+      },
+      {
+        pattern: /^[\s]*\d+\.\s+/gm,
+        type: 'numbered' as const,
+      },
+      {
+        pattern: /```[\s\S]*?```|`[^`]+`/g,
+        type: 'codeblock' as const,
       },
     ];
 
-    // Filter patterns based on enabled tags
-    const enabledPatterns = patterns.filter(p => enabledTags.includes(p.type));
-
     const foundHighlights: HighlightSpan[] = [];
 
-    enabledPatterns.forEach(({ pattern, type }) => {
+    patterns.forEach(({ pattern, type }) => {
       let match;
       while ((match = pattern.exec(text)) !== null) {
         // Extend the match to include surrounding context for better highlighting
@@ -120,6 +111,15 @@ export const highlightAPI = {
           }
         }
 
+        // For bullets and numbered lists, capture the full line
+        if (type === 'bullet' || type === 'numbered') {
+          const afterMatch = text.slice(end);
+          const lineEnd = afterMatch.search(/\n/);
+          if (lineEnd !== -1) {
+            end = Math.min(end + lineEnd, text.length);
+          }
+        }
+
         foundHighlights.push({
           start,
           end,
@@ -138,7 +138,7 @@ export const highlightAPI = {
           end: Math.min(50, text.length),
           text: text.slice(0, Math.min(50, text.length)),
         },
-      ].filter(h => enabledTags.includes(h.type));
+      ];
 
       foundHighlights.push(...dummyHighlights);
     }
