@@ -52,18 +52,19 @@ export const HighlightLegend: React.FC<HighlightLegendProps> = ({
       <h3 className="text-sm font-medium mb-3 text-muted-foreground">
         Highlight Types
       </h3>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="flex flex-row flex-nowrap gap-2 overflow-x-auto pb-2 w-full" role="list" aria-label="Highlight Types">
         {types.map(type => (
           <button
             key={type.type}
             onClick={() => onToggleType(type.type)}
-            className={`flex items-center space-x-2 p-2 rounded-md text-sm transition-colors ${
+            className={`flex items-center space-x-2 p-2 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${
               type.enabled
                 ? 'bg-muted hover:bg-muted/80'
                 : 'opacity-50 hover:opacity-75'
             }`}
             title={type.label}
             aria-label={type.label}
+            role="listitem"
           >
             <div className={`w-3 h-3 rounded-full ${type.color}`} />
             {getIcon(type.type)}
@@ -79,25 +80,6 @@ export const HighlightLegend: React.FC<HighlightLegendProps> = ({
       >
         {collapsed ? 'Show Legend' : 'Hide Legend'}
       </button>
-      <div className={`flex flex-wrap items-center gap-3 ${className} ${collapsed ? 'hidden' : ''} sm:flex`}>
-        {types.map(type => (
-          <button
-            key={type.type}
-            onClick={() => onToggleType(type.type)}
-            className={`flex items-center space-x-2 p-2 rounded-md text-sm transition-colors ${
-              type.enabled
-                ? 'bg-muted hover:bg-muted/80'
-                : 'opacity-50 hover:opacity-75'
-            }`}
-            title={type.label}
-            aria-label={type.label}
-          >
-            <div className={`w-3 h-3 rounded-full ${type.color}`} />
-            {getIcon(type.type)}
-            <span className="text-xs">{type.label}</span>
-          </button>
-        ))}
-      </div>
     </div>
   );
 };

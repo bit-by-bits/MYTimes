@@ -4,21 +4,19 @@ import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { FileUpload } from '../ui/file-upload';
 import { HighlightLegend } from '../ui/highlight-legend';
-import { highlightAPI } from '../../lib/api';
-import { fileUtils, FileUploadResult } from '../../lib/file-utils';
 import { useTheme } from '../../contexts/ThemeContext';
 import {
-  Sparkles,
-  Loader2,
-  Copy,
   Download,
   Sun,
   Moon,
-  Upload,
   Trash2,
   CheckCircle,
-  AlertCircle,
+  Inbox,
+  Sparkles,
 } from 'lucide-react';
+import { extractHighlights } from '../../lib/highlighter';
+// @ts-expect-error: No types for html2pdf.js, safe to ignore for import
+declare module 'html2pdf.js';
 
 interface HighlightSpan {
   start: number;
@@ -67,10 +65,8 @@ export const SemanticHighlighter: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const [inputText, setInputText] = useState('');
   const [highlightedSpans, setHighlightedSpans] = useState<HighlightSpan[]>([]);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [copyMessage, setCopyMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [uploadedFileName, setUploadedFileName] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
 
   const [highlightTypes, setHighlightTypes] = useState<HighlightType[]>([
     {
@@ -88,13 +84,13 @@ export const SemanticHighlighter: React.FC = () => {
     {
       type: 'todo',
       label: 'TODO',
-      color: 'bg-yellow-500',
+      color: 'bg-yellow-400',
       enabled: true,
     },
     {
       type: 'bullet',
       label: 'Bullet',
-      color: 'bg-orange-500',
+      color: 'bg-orange-600',
       enabled: true,
     },
     {
@@ -111,61 +107,24 @@ export const SemanticHighlighter: React.FC = () => {
     },
   ]);
 
-  const handleAnalyze = useCallback(async () => {
-    if (!inputText.trim()) return;
+  const outputRef = React.useRef<HTMLDivElement>(null);
 
-    setIsAnalyzing(true);
-    setErrorMessage('');
-    try {
-      const response = await highlightAPI.analyze(inputText);
-      setHighlightedSpans(response.highlights);
-    } catch (error) {
-      console.error('Analysis failed:', error);
-      setErrorMessage('Analysis failed. Please try again.');
-    } finally {
-      setIsAnalyzing(false);
-    }
-  }, [inputText]);
+  const handleInputChange = useCallback((text: string) => {
+    setInputText(text);
+    setHighlightedSpans(text.trim() ? extractHighlights(text) : []);
+    setCopyMessage('');
+  }, []);
 
   const handleLoadSample = useCallback(() => {
     setInputText(SAMPLE_TEXT);
-    setHighlightedSpans([]);
-    setUploadedFileName('');
-    setErrorMessage('');
-    // Auto-analyze after a short delay
-    setTimeout(() => {
-      if (SAMPLE_TEXT.trim()) {
-        handleAnalyze();
-      }
-    }, 100);
-  }, [handleAnalyze]);
+    setHighlightedSpans(extractHighlights(SAMPLE_TEXT));
+    setCopyMessage('');
+  }, []);
 
   const handleClear = useCallback(() => {
     setInputText('');
     setHighlightedSpans([]);
-    setUploadedFileName('');
-    setErrorMessage('');
     setCopyMessage('');
-  }, []);
-
-  const handleFileUpload = useCallback(
-    (result: FileUploadResult) => {
-      setInputText(result.text);
-      setUploadedFileName(result.fileName);
-      setHighlightedSpans([]);
-      setErrorMessage('');
-      // Auto-analyze after file upload
-      setTimeout(() => {
-        if (result.text.trim()) {
-          handleAnalyze();
-        }
-      }, 100);
-    },
-    [handleAnalyze]
-  );
-
-  const handleFileError = useCallback((message: string) => {
-    setErrorMessage(message);
   }, []);
 
   const toggleHighlightType = useCallback((type: HighlightType['type']) => {
@@ -174,44 +133,28 @@ export const SemanticHighlighter: React.FC = () => {
     );
   }, []);
 
-  const copyHighlightedText = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(inputText);
-      setCopyMessage('Text copied to clipboard!');
-      setTimeout(() => setCopyMessage(''), 2000);
-    } catch (error) {
-      setCopyMessage('Failed to copy text');
-      setTimeout(() => setCopyMessage(''), 2000);
-    }
-  }, [inputText]);
-
   const renderHighlightedText = useCallback(() => {
     if (!inputText || highlightedSpans.length === 0) {
       return inputText;
     }
-
     const enabledTypes = new Set(
       highlightTypes.filter(t => t.enabled).map(t => t.type)
     );
-
     const validSpans = highlightedSpans
       .filter(span => enabledTypes.has(span.type))
       .sort((a, b) => a.start - b.start);
-
     if (validSpans.length === 0) {
       return inputText;
     }
-
     const parts: (string | JSX.Element)[] = [];
     let currentIndex = 0;
-
     validSpans.forEach((span, index) => {
-      // Add text before the span
       if (currentIndex < span.start) {
-        parts.push(inputText.slice(currentIndex, span.start));
+        const chunk = inputText.slice(currentIndex, span.start);
+        if (chunk.replace(/[`\s]/g, '').length > 0) {
+          parts.push(chunk);
+        }
       }
-
-      // Add the highlighted span
       const spanText = inputText.slice(span.start, span.end);
       const classMap = {
         definition: 'highlight-definition',
@@ -221,7 +164,6 @@ export const SemanticHighlighter: React.FC = () => {
         numbered: 'highlight-numbered',
         codeblock: 'highlight-codeblock',
       };
-
       const typeLabels = {
         definition: 'Definition',
         example: 'Example',
@@ -230,37 +172,47 @@ export const SemanticHighlighter: React.FC = () => {
         numbered: 'Numbered',
         codeblock: 'Code',
       };
-
       if (span.type === 'codeblock') {
         parts.push(
-          <pre key={`codeblock-${span.start}-${index}`} className="highlight-codeblock font-mono bg-gray-100 rounded px-2 py-1 my-2 transition-colors duration-300 overflow-x-auto">
-            <code>{spanText}</code>
+          <pre
+            key={`codeblock-${span.start}-${index}`}
+            className="highlight-codeblock font-mono bg-gray-100 rounded px-2 py-1 my-2 transition-colors duration-300 overflow-x-auto"
+          >
+            <code>{spanText.replace(/^`+|`+$/g, '')}</code>
           </pre>
         );
       } else {
         parts.push(
           <span
             key={`${span.start}-${index}`}
-            className={`${classMap[span.type]} relative group inline-block transition-colors duration-300`}
-            title={`${typeLabels[span.type]}: ${spanText.slice(0, 100)}${spanText.length > 100 ? '...' : ''}`}
+            className={`${classMap[span.type]} relative group inline-block transition-colors duration-300 px-1 py-0.5 my-1 cursor-pointer`}
+            tabIndex={0}
+            aria-label={typeLabels[span.type]}
           >
             {spanText}
-            <span className="absolute -top-6 left-0 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+            <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-3 py-1 rounded shadow opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
               {typeLabels[span.type]}
             </span>
           </span>
         );
       }
-
       currentIndex = span.end;
     });
-
-    // Add remaining text
     if (currentIndex < inputText.length) {
-      parts.push(inputText.slice(currentIndex));
+      const chunk = inputText.slice(currentIndex);
+      if (chunk.replace(/[`\s]/g, '').length > 0) {
+        parts.push(chunk);
+      }
     }
-
-    return parts;
+    return parts.map((part, i) =>
+      typeof part === 'string' ? (
+        <span key={i}>{part}</span>
+      ) : (
+        <div key={i} className="mb-2">
+          {part}
+        </div>
+      )
+    );
   }, [inputText, highlightedSpans, highlightTypes]);
 
   const exportAsPDF = useCallback(async () => {
@@ -318,7 +270,7 @@ export const SemanticHighlighter: React.FC = () => {
         printWindow.print();
       }
     } catch (error) {
-      setErrorMessage('Failed to export PDF');
+      setCopyMessage('Failed to export PDF');
     }
   }, [renderHighlightedText]);
 
@@ -351,14 +303,6 @@ export const SemanticHighlighter: React.FC = () => {
         </Button>
       </div>
 
-      {/* Error Message */}
-      {errorMessage && (
-        <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center space-x-2">
-          <AlertCircle className="h-4 w-4 text-destructive" />
-          <span className="text-sm text-destructive">{errorMessage}</span>
-        </div>
-      )}
-
       {/* Success Message */}
       {copyMessage && (
         <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center space-x-2">
@@ -367,32 +311,31 @@ export const SemanticHighlighter: React.FC = () => {
         </div>
       )}
 
-      {/* File Upload */}
-      <div className="mb-6">
-        <FileUpload
-          onFileUpload={handleFileUpload}
-          onError={handleFileError}
-          disabled={isAnalyzing}
-        />
-        {uploadedFileName && (
-          <p className="text-xs text-muted-foreground mt-2">
-            Uploaded: {uploadedFileName}
-          </p>
-        )}
-      </div>
-
       {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left pane - Input */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
+      <div className="flex flex-col lg:flex-row gap-6 w-full">
+        {/* Input Box */}
+        <div className="flex-1 flex flex-col min-h-[300px] bg-card border rounded-lg p-4 w-full max-w-full">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Input Text</h2>
             <div className="flex items-center space-x-2">
+              <FileUpload
+                onFileUpload={({ text }) => {
+                  setInputText(text);
+                  setHighlightedSpans(
+                    text.trim() ? extractHighlights(text) : []
+                  );
+                  setCopyMessage('');
+                  setToastMessage('File uploaded successfully');
+                }}
+                onError={msg => {
+                  if (msg !== 'File uploaded successfully') setToastMessage(msg);
+                }}
+                disabled={false}
+              />
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleLoadSample}
-                disabled={isAnalyzing}
                 aria-label="Load Sample"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
@@ -402,7 +345,6 @@ export const SemanticHighlighter: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={handleClear}
-                disabled={isAnalyzing}
                 aria-label="Clear"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
@@ -410,55 +352,63 @@ export const SemanticHighlighter: React.FC = () => {
               </Button>
             </div>
           </div>
-
           <Textarea
             value={inputText}
-            onChange={e => setInputText(e.target.value)}
+            onChange={e => handleInputChange(e.target.value)}
             placeholder="Paste your text here or upload a file..."
-            className="max-h-[500px] overflow-auto p-4 monospace-text resize-none"
-            disabled={isAnalyzing}
+            className="flex-1 min-h-[200px] max-h-[500px] overflow-auto p-4 monospace-text resize-none bg-background border rounded"
           />
         </div>
-
-        {/* Right pane - Output */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Highlighted Output</h2>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={copyHighlightedText}
-                disabled={!inputText.trim()}
-                aria-label="Copy"
-              >
-                <Copy className="h-4 w-4 mr-2" />
-                Copy
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={exportAsPDF}
-                disabled={!inputText.trim() || highlightedSpans.length === 0}
-                aria-label="Export PDF"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export PDF
-              </Button>
+        {/* Output Box */}
+        <div className="flex-1 flex flex-col min-h-[300px] bg-card border rounded-lg p-4 w-full max-w-full mt-6 lg:mt-0">
+          <div className="flex flex-col gap-2 mb-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Highlighted Output</h2>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const dataStr =
+                      'data:application/json;charset=utf-8,' +
+                      encodeURIComponent(JSON.stringify(highlightedSpans, null, 2));
+                    const dlAnchor = document.createElement('a');
+                    dlAnchor.setAttribute('href', dataStr);
+                    dlAnchor.setAttribute('download', 'highlights.json');
+                    dlAnchor.click();
+                  }}
+                  disabled={!inputText.trim() || highlightedSpans.length === 0}
+                  aria-label="Download Highlights JSON"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Highlights
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportAsPDF}
+                  disabled={!inputText.trim() || highlightedSpans.length === 0}
+                  aria-label="Export PDF"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export PDF
+                </Button>
+              </div>
             </div>
           </div>
-
-          <div className="border rounded-lg p-4 max-h-[500px] overflow-auto bg-card leading-relaxed relative">
-            {isAnalyzing && <div className="absolute inset-0 flex items-center justify-center bg-white/70 dark:bg-black/40 z-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}
+          <div
+            ref={outputRef}
+            className="flex-1 border rounded-lg p-4 max-h-[500px] overflow-auto bg-background leading-relaxed relative"
+          >
             {!inputText ? (
               <div className="text-center py-8 text-muted-foreground">
-                <Upload className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <Inbox className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>Enter text or upload a file to see highlights</p>
               </div>
             ) : highlightedSpans.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Click "Highlight" to analyze your text</p>
+                <p>No highlights found. Try including examples, definitions, TODOs, bullets, or code snippets.</p>
               </div>
             ) : (
               <div className="monospace-text whitespace-pre-wrap">
@@ -466,53 +416,30 @@ export const SemanticHighlighter: React.FC = () => {
               </div>
             )}
           </div>
-
-          {errorMessage && (
-            <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center space-x-2">
-              <AlertCircle className="h-4 w-4 text-destructive" />
-              <span className="text-sm text-destructive">{errorMessage}</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleAnalyze}
-                disabled={!inputText.trim() || isAnalyzing}
-                aria-label="Try Again"
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                Try Again
-              </Button>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Toolbar */}
-      <div className="mt-6 flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
-        <HighlightLegend
-          types={highlightTypes}
-          onToggleType={toggleHighlightType}
-          className="w-full sm:w-auto"
-        />
-
-        <div className="flex items-center space-x-2">
-          <Button
-            onClick={handleAnalyze}
-            disabled={!inputText.trim() || isAnalyzing}
-            className="min-w-[120px]"
-            aria-label={isAnalyzing ? "Analyzing..." : "Highlight"}
+      {/* Show toast for errors */}
+      {toastMessage && (
+        <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded shadow z-50 ${toastMessage === 'File uploaded successfully' ? 'bg-green-600' : 'bg-destructive'} text-white`}>
+          {toastMessage}
+          <button
+            className="ml-4 underline"
+            onClick={() => setToastMessage('')}
           >
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4 mr-2" />
-                Highlight
-              </>
-            )}
-          </Button>
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Highlight Types Legend - full width below input/output */}
+      <div className="w-full mt-8 flex justify-center px-2">
+        <div className="w-full max-w-4xl overflow-x-auto">
+          <HighlightLegend
+            types={highlightTypes}
+            onToggleType={toggleHighlightType}
+            className="flex flex-row flex-nowrap gap-2 justify-center min-w-[400px] sm:min-w-0"
+          />
         </div>
       </div>
     </div>

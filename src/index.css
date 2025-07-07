@@ -119,7 +119,9 @@
 
 /* Monospace font for input/output */
 .monospace-text {
-  font-family: 'Fira Mono', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
+  font-family:
+    'Fira Mono', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono',
+    'Courier New', monospace;
 }
 
 .highlight-definition,
@@ -128,7 +130,9 @@
 .highlight-bullet,
 .highlight-numbered,
 .highlight-codeblock {
-  transition: background-color 0.3s, color 0.3s;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
 }
 
 .highlight-codeblock pre,
