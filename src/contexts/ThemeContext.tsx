@@ -6,7 +6,7 @@ import React, {
   ReactNode,
 } from 'react';
 
-type Theme = 'light' | 'dark';
+export type Theme = 'light' | 'dark';
 
 interface ThemeContextType {
   theme: Theme;
@@ -30,32 +30,19 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>('light');
+  // Removed system theme logic
 
   useEffect(() => {
     // Check localStorage for saved theme preference
-    const savedTheme = localStorage.getItem('theme') as Theme;
-    if (savedTheme) {
+    const savedTheme = localStorage.getItem('theme') as Theme | null;
+    if (savedTheme === 'light' || savedTheme === 'dark') {
       setThemeState(savedTheme);
     } else {
-      // Check system preference
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)')
-        .matches
-        ? 'dark'
-        : 'light';
-      setThemeState(systemTheme);
+      setThemeState('light');
     }
-
-    // Listen for system theme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      const saved = localStorage.getItem('theme');
-      if (!saved) {
-        setThemeState(e.matches ? 'dark' : 'light');
-      }
-    };
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
+
+  // Removed system theme logic
 
   useEffect(() => {
     // Apply theme to document

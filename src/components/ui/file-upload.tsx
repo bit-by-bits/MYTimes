@@ -1,12 +1,9 @@
 import React, { useCallback, useState } from 'react';
+import { toast } from 'react-hot-toast';
 import { Button } from './button';
-import { Upload, FileText, File, X } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import { fileUtils, FileUploadResult } from '../../lib/file-utils';
 import { cn } from '../../lib/utils';
-// No-op: pdfjs-dist/webpack is needed for browser compatibility
-// Set workerSrc for pdfjs-dist
-import * as pdfjsLib from 'pdfjs-dist/webpack';
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface FileUploadProps {
   onFileUpload: (result: FileUploadResult) => void;
@@ -21,80 +18,29 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   disabled = false,
   className,
 }) => {
-  const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [fileName, setFileName] = useState<string | null>(null);
 
   const handleFile = useCallback(
     async (file: File) => {
+      setUploading(true);
+      setFileName(file.name);
       try {
-        let text = '';
-        if (file.name.endsWith('.pdf')) {
-          try {
-            const arrayBuffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer })
-              .promise;
-            for (let i = 1; i <= pdf.numPages; i++) {
-              const page = await pdf.getPage(i);
-              const content = await page.getTextContent();
-              text += content.items.map(item => item.str).join(' ') + '\n';
-            }
-          } catch (e) {
-            // fallback: try to extract as plain text
-            text = await file.text();
-          }
-        } else if (file.name.endsWith('.docx')) {
-          try {
-            const mammoth = await import('mammoth');
-            const arrayBuffer = await file.arrayBuffer();
-            const { value } = await mammoth.extractRawText({ arrayBuffer });
-            text = value;
-          } catch (e) {
-            // fallback: try to extract as plain text
-            text = await file.text();
-          }
-        } else if (file.name.endsWith('.txt')) {
-          text = await file.text();
-        } else {
-          throw new Error(
-            'Unsupported file type. Only PDF, DOCX, and TXT are allowed.'
-          );
-        }
-        if (!text.trim()) throw new Error('No text extracted');
-        onFileUpload({ text, fileName: file.name });
-        onError?.('File uploaded successfully');
+        const result = await fileUtils.extractTextFromFile(file);
+        onFileUpload(result);
+        toast.success('File uploaded successfully');
       } catch (err) {
-        onError?.(
+        toast.error(
           err instanceof Error
             ? err.message
             : 'Could not extract text from this file.'
         );
       }
+      setUploading(false);
     },
     [onFileUpload, onError]
   );
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragOver(false);
-
-      const files = Array.from(e.dataTransfer.files);
-      if (files.length > 0) {
-        handleFile(files[0]);
-      }
-    },
-    [handleFile]
-  );
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  }, []);
 
   const handleFileInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -106,33 +52,37 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     [handleFile]
   );
 
-  const getFileIcon = (fileName: string) => {
-    if (fileName.endsWith('.pdf')) return <File className="h-4 w-4" />;
-    if (fileName.endsWith('.docx')) return <FileText className="h-4 w-4" />;
-    return <FileText className="h-4 w-4" />;
-  };
-
   return (
-    <div className={cn('flex flex-col items-center', className)}>
+    <div className={cn('flex flex-col items-center w-full', className)}>
       <input
         ref={inputRef}
         type="file"
-        accept=".pdf,.docx,.txt"
+        accept=".pdf"
         className="hidden"
         onChange={handleFileInput}
-        disabled={disabled}
+        disabled={disabled || uploading}
       />
       <Button
         type="button"
         variant="outline"
         size="sm"
         onClick={() => inputRef.current?.click()}
-        disabled={disabled}
-        className="flex items-center space-x-2"
+        disabled={disabled || uploading}
+        className="flex items-center space-x-1 sm:space-x-2"
       >
         <Upload className="h-4 w-4" />
-        <span>Upload File</span>
+        <span className="text-xs sm:text-sm">Upload PDF</span>
       </Button>
+      {uploading && (
+        <div className="w-full mt-2">
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div className="h-2 bg-primary animate-pulse w-full" />
+          </div>
+          <div className="text-xs text-muted-foreground mt-1 text-center">
+            Extracting text...
+          </div>
+        </div>
+      )}
     </div>
   );
 };

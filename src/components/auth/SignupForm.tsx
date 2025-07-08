@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { useAuth } from '../../contexts/AuthContext';
 import { Github } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface SignupFormProps {
   onSwitchToLogin: () => void;
@@ -14,7 +15,15 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { signup, signupWithGoogle, signupWithGitHub, isLoading } = useAuth();
+  const { signup, signupWithGoogle, signupWithGitHub, isLoading, user } =
+    useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,8 +41,8 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
 
     try {
       await signup(name, email, password);
-    } catch (err) {
-      setError('Signup failed. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'Signup failed. Please try again.');
     }
   };
 
@@ -41,7 +50,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
     setError('');
     try {
       await signupWithGoogle();
-    } catch (err) {
+    } catch {
       setError('Google signup failed. Please try again.');
     }
   };
@@ -50,16 +59,18 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
     setError('');
     try {
       await signupWithGitHub();
-    } catch (err) {
+    } catch {
       setError('GitHub signup failed. Please try again.');
     }
   };
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-6">
+    <div className="w-full max-w-md mx-auto space-y-4 sm:space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight">Create an account</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+          Create an account
+        </h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-2">
           Enter your information to get started
         </p>
       </div>

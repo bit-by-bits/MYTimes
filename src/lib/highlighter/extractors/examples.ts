@@ -2,17 +2,22 @@
 import type { Highlight } from '../types';
 
 export function extractExamples(text: string): Highlight[] {
-  const regex =
-    /(For example|for example|e\.g\.|E\.g\.|for instance|such as|like|including|namely|specifically|consider|take|imagine)[^\n.]*[.]/g;
+  const triggers = ['for example', 'such as', 'e.g.', 'for instance'];
+  // Regex to match sentences (with punctuation)
+  const sentenceRegex = /(?<=^|[.!?]\s|\n)([^.!?\n]+[.!?])(?=\s|$|\n)/g;
   const highlights: Highlight[] = [];
   let match;
-  while ((match = regex.exec(text)) !== null) {
-    highlights.push({
-      type: 'example',
-      text: match[0],
-      start: match.index,
-      end: match.index + match[0].length,
-    });
+  while ((match = sentenceRegex.exec(text)) !== null) {
+    const sentence = match[0];
+    const lower = sentence.toLowerCase();
+    if (triggers.some(t => lower.includes(t))) {
+      highlights.push({
+        type: 'example',
+        text: sentence,
+        start: match.index,
+        end: match.index + sentence.length,
+      });
+    }
   }
   return highlights;
 }

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Header } from './Header';
-import { SemanticHighlighter } from './SemanticHighlighter';
-import { About } from './About';
+import AboutPage from '../../pages/AboutPage';
+import SettingsPage from '../../pages/SettingsPage';
+import FeedbackPage from '../../pages/FeedbackPage';
 
-type CurrentPage = 'home' | 'about';
+type CurrentPage = 'home' | 'about' | 'settings' | 'feedback';
 
 export const MainApp: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<CurrentPage>('home');
@@ -15,16 +15,23 @@ export const MainApp: React.FC = () => {
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'about':
-        return <About onBack={() => handleNavigate('home')} />;
+        return <AboutPage />;
+      case 'settings':
+        return <SettingsPage />;
+      case 'feedback':
+        return <FeedbackPage />;
       default:
-        return <SemanticHighlighter />;
+        return (
+          <div className="text-center py-8">
+            Welcome to Semantic Highlighter!
+          </div>
+        );
     }
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <Header onNavigate={handleNavigate} currentPage={currentPage} />
-      <main className="py-8">{renderCurrentPage()}</main>
+      <main className="py-4 sm:py-6 lg:py-8">{renderCurrentPage()}</main>
     </div>
   );
 };

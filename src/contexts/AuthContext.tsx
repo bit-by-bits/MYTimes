@@ -15,6 +15,8 @@ import {
   signInWithEmail,
   signUpWithEmail,
 } from '../lib/auth';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 
 interface User {
   id: string;
@@ -34,6 +36,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   isLoading: boolean;
   isInitializing: boolean;
+  isGuest: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,12 +53,28 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+const GUEST_USER = {
+  id: 'guest',
+  name: 'Guest',
+  email: '',
+  picture: '',
+  isGuest: true,
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isGuest, setIsGuest] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    if (localStorage.getItem('guest') === 'true') {
+      setUser(GUEST_USER);
+      setIsGuest(true);
+      setIsInitializing(false);
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, firebaseUser => {
       if (firebaseUser) {
         setUser({
@@ -219,9 +238,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = async () => {
+    localStorage.removeItem('guest');
     try {
       await signOut(auth);
       // User state will be updated by onAuthStateChanged
+      localStorage.clear();
+      toast.success('Logged out successfully');
+      navigate('/auth');
     } catch (error) {
       console.error('Logout failed:', error);
     }
@@ -238,6 +261,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     isLoading,
     isInitializing,
+    isGuest,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

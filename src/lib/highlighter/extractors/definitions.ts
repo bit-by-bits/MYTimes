@@ -2,17 +2,22 @@
 import type { Highlight } from '../types';
 
 export function extractDefinitions(text: string): Highlight[] {
-  const regex =
-    /(?:A |An |The )?([A-Z][a-zA-Z0-9_\- ]+) (is|refers to|means|can be described as|is defined as|are) ([^.\n]+[.])/g;
+  const triggers = ['is defined as', 'refers to', 'means', 'is known as'];
+  // Regex to match sentences (with punctuation)
+  const sentenceRegex = /(?<=^|[.!?]\s|\n)([^.!?\n]+[.!?])(?=\s|$|\n)/g;
   const highlights: Highlight[] = [];
   let match;
-  while ((match = regex.exec(text)) !== null) {
-    highlights.push({
-      type: 'definition',
-      text: match[0],
-      start: match.index,
-      end: match.index + match[0].length,
-    });
+  while ((match = sentenceRegex.exec(text)) !== null) {
+    const sentence = match[0];
+    const lower = sentence.toLowerCase();
+    if (triggers.some(t => lower.includes(t))) {
+      highlights.push({
+        type: 'definition',
+        text: sentence,
+        start: match.index,
+        end: match.index + sentence.length,
+      });
+    }
   }
   return highlights;
 }

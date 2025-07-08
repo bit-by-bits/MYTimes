@@ -8,9 +8,11 @@ import { validateHighlights } from './validate';
 import { postprocessHighlights } from './postprocess';
 import type { Highlight } from './types';
 
-export function extractHighlights(text: string): Highlight[] {
+export function analyzeText(
+  text: string
+): { start: number; end: number; tag: string }[] {
   const preprocessed = preprocessText(text);
-  let highlights: Highlight[] = [];
+  let highlights: { start: number; end: number; type: string }[] = [];
   highlights = highlights.concat(
     extractDefinitions(preprocessed),
     extractExamples(preprocessed),
@@ -18,7 +20,29 @@ export function extractHighlights(text: string): Highlight[] {
     extractBullets(preprocessed),
     extractCodeblocks(preprocessed)
   );
-  highlights = validateHighlights(preprocessed, highlights);
-  highlights = postprocessHighlights(highlights);
-  return highlights;
+  // Add 'text' property for compatibility with validate/postprocess, and cast type
+  const allowedTypes = [
+    'definition',
+    'example',
+    'todo',
+    'bullet',
+    'numbered',
+    'code',
+  ] as const;
+  function isHighlightType(t: string): t is Highlight['type'] {
+    return (allowedTypes as readonly string[]).includes(t);
+  }
+  const highlightsWithText: Highlight[] = highlights
+    .filter(h => isHighlightType(h.type))
+    .map(h => ({
+      ...h,
+      text: preprocessed.slice(h.start, h.end),
+      type: h.type as Highlight['type'],
+    }));
+  let valid = validateHighlights(preprocessed, highlightsWithText);
+  valid = postprocessHighlights(valid);
+  // Convert to {start, end, tag} format for output
+  return valid
+    .map(({ start, end, type }) => ({ start, end, tag: type }))
+    .sort((a, b) => a.start - b.start);
 }

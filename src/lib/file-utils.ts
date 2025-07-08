@@ -1,4 +1,8 @@
-// File upload and text extraction utilities
+import * as pdfjsLib from 'pdfjs-dist';
+import PdfWorker from 'pdfjs-dist/build/pdf.worker?worker';
+
+// Register the PDF.js worker correctly for Vite:
+pdfjsLib.GlobalWorkerOptions.workerPort = new PdfWorker();
 
 export interface FileUploadResult {
   text: string;
@@ -8,68 +12,72 @@ export interface FileUploadResult {
 
 export const fileUtils = {
   async extractTextFromFile(file: File): Promise<FileUploadResult> {
-    const fileName = file.name;
-    const fileType = file.type;
+    const { name: fileName, type: fileType } = file;
 
     try {
       if (fileType === 'text/plain' || fileName.endsWith('.txt')) {
-        return await this.extractFromTxt(file);
-      } else if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
-        return await this.extractFromPdf(file);
-      } else if (
+        return this.extractFromTxt(file);
+      }
+      if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
+        return this.extractFromPdf(file);
+      }
+      if (
         fileType ===
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
         fileName.endsWith('.docx')
       ) {
-        return await this.extractFromDocx(file);
-      } else {
-        throw new Error('Unsupported file type');
+        return this.extractFromDocx(file);
       }
+
+      throw new Error('Unsupported file type');
     } catch (error) {
       console.error('File extraction failed:', error);
       throw new Error(`Failed to extract text from ${fileName}`);
     }
   },
 
-  async extractFromTxt(file: File): Promise<FileUploadResult> {
+  extractFromTxt(file: File): Promise<FileUploadResult> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = e => {
-        const text = e.target?.result as string;
+
+      reader.onload = () => {
         resolve({
-          text,
+          text: reader.result as string,
           fileName: file.name,
           fileType: 'text/plain',
         });
       };
+
       reader.onerror = () => reject(new Error('Failed to read text file'));
       reader.readAsText(file);
     });
   },
 
   async extractFromPdf(file: File): Promise<FileUploadResult> {
-    // For now, return a placeholder since pdfjs would need to be added as a dependency
-    // In a real implementation, you would use pdfjs-dist
-    return new Promise(resolve => {
-      // Simulate PDF extraction
-      setTimeout(() => {
-        resolve({
-          text: `[PDF content extracted from ${file.name}]\n\nThis is a placeholder for PDF text extraction. In a real implementation, you would use pdfjs-dist to extract text from PDF files.`,
-          fileName: file.name,
-          fileType: 'application/pdf',
-        });
-      }, 1000);
-    });
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+    let text = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const pageText = content.items.map((item: any) => item.str).join(' ');
+      text += pageText + '\n\n';
+    }
+
+    return {
+      text: text.trim(),
+      fileName: file.name,
+      fileType: 'application/pdf',
+    };
   },
 
   async extractFromDocx(file: File): Promise<FileUploadResult> {
-    // For now, return a placeholder since mammoth would need to be added as a dependency
-    // In a real implementation, you would use mammoth
+    // TODO: Replace with actual extraction using mammoth
     return new Promise(resolve => {
-      // Simulate DOCX extraction
       setTimeout(() => {
         resolve({
-          text: `[DOCX content extracted from ${file.name}]\n\nThis is a placeholder for DOCX text extraction. In a real implementation, you would use mammoth to extract text from DOCX files.`,
+          text: `[DOCX content extracted from ${file.name}]\n\nThis is a placeholder. Use mammoth to extract real DOCX content.`,
           fileName: file.name,
           fileType:
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

@@ -2,8 +2,7 @@
 import type { Highlight } from '../types';
 
 export function extractTodos(text: string): Highlight[] {
-  const regex =
-    /(TODO:|FIXME:|NOTE:|Fix:|HACK:|BUG:|REVIEW:|OPTIMIZE:|REFACTOR:|\- \[ \]|\- \[x\]).*/g;
+  const regex = /^(\s*)(TODO:|Fix:|To be done:|REVIEW:).*/gim;
   const highlights: Highlight[] = [];
   let match;
   while ((match = regex.exec(text)) !== null) {
